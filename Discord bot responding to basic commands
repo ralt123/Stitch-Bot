@@ -1,0 +1,57 @@
+from discord.ext import commands
+import discord
+client = commands.Bot(command_prefix="!")  # This is the prefix I set for the bot, we change it to whatever we want tho
+
+
+dclient = discord.Client()
+
+
+@client.event
+async def on_ready():
+    print("Bot is ready")
+
+
+@client.command()
+async def hello(ctx):
+    await ctx.send('Hello brother')
+
+
+@client.command()
+async def what(ctx):
+    await ctx.send('..What?')
+
+
+@client.command()
+async def yo(ctx):
+    await ctx.send('uh... no?')
+
+
+@client.command()
+async def wussup(ctx):
+    await ctx.send('Nothing much my guy, how bout you?')
+
+
+@client.command()
+async def crouching(ctx):
+    await ctx.send('Tiger')
+
+
+@client.command()
+async def commands(ctx):
+    await ctx.send("""```css
+!how 
+!hello 
+!what 
+!suck 
+!wussup 
+!crouching 
+!commands 
+```""")  # sends a message of the current commands in the form of a code block, just a cosmetic choice
+
+
+@client.event
+async def on_message(message):
+    message.content = message.content.lower().replace(' ', '')
+    await client.process_commands(message)  # makes it so that the commands are not case sensitive
+
+client.run("")  # Didn't get the token of the bot so we can enter it here, the code above worked with a bot I made
