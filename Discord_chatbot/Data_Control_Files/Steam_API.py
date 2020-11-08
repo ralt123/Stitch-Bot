@@ -28,7 +28,7 @@ class steam_APIM:
         with urllib.request.urlopen(url) as openPage:
             pageData = json.loads(openPage.read().decode())
             # Stores the data in a .json file
-            with open('gameList.json', 'w') as f:
+            with open('../../gameList.json', 'w') as f:
                 json.dump(pageData, f)
 
     @staticmethod
@@ -45,7 +45,7 @@ class steam_APIM:
         """
         gameID = False
         # Searches json file for the data related to the game name provided
-        with open('gameList.json',) as f:
+        with open('../../gameList.json', ) as f:
             gameListData = json.load(f)
         for gameData in gameListData["applist"]["apps"]:
             if gameData["name"].lower() == gameName.lower():

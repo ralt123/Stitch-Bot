@@ -1,10 +1,8 @@
 import discord
 
-TOKEN = 'XXXXXXXXXXXXXXXXXXXXXXX'
+TOKEN = 'Nzc0MzIwNjg1NTk4MjQ0OTE0.X6WEVQ.3tTbOBy-X3d8uBPS5ISiqiAuGwM'
 
 client = discord.Client()
-#rest of code
-#
-#
-#
+
+
 client.run(TOKEN)
