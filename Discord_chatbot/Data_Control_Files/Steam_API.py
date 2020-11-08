@@ -27,10 +27,13 @@ class steam_APIM:
         url = "http://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json"
         with urllib.request.urlopen(url) as openPage:
             pageData = json.loads(openPage.read().decode())
+            # Generates a file path independent from the calling program
+            filePath = os.path.dirname(__file__)
+            gameListFilePath = os.path.join(filePath, "gameList.json")
             # Stores the data in a .json file
-            with open('../../gameList.json', 'w') as f:
+            with open(gameListFilePath, 'w') as f:
                 json.dump(pageData, f)
-
+                
     @staticmethod
     def findGameID(gameName):
         """
