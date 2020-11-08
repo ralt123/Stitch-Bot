@@ -49,5 +49,4 @@ class stitchBot(commands.Bot):
 
 if __name__ == '__main__':
     bot = stitchBot(prefix='!')
-    #bot.run('Nzc0MzIwNjg1NTk4MjQ0OTE0.X6WEVQ.3tTbOBy-X3d8uBPS5ISiqiAuGwM')
-    bot.run('NzcxNzM2MzExMjI0NDY3NDU3.X5wdcg.-C4ocwR-HH73SngN3cu4k10S-88')
+    bot.run()
