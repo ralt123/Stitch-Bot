@@ -6,7 +6,7 @@ from Steam_API import steamHandler
 steamHandler.gamePlayerCount(730)
 """
 
-import urllib.request, json, os
+import urllib.request, json
 
 
 class steam_APIM:
@@ -27,10 +27,13 @@ class steam_APIM:
         url = "http://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json"
         with urllib.request.urlopen(url) as openPage:
             pageData = json.loads(openPage.read().decode())
+            # Generates a file path independent from the calling program
+            filePath = os.path.dirname(__file__)
+            gameListFilePath = os.path.join(filePath, "gameList.json")
             # Stores the data in a .json file
-            with open('gameList.json', 'w') as f:
+            with open(gameListFilePath, 'w') as f:
                 json.dump(pageData, f)
-
+                
     @staticmethod
     def findGameID(gameName):
         """
@@ -44,11 +47,8 @@ class steam_APIM:
         :return: steamID of given game as a string or False if the ID was not found
         """
         gameID = False
-        # Generates a file path independent from the calling program
-        filePath = os.path.dirname(__file__)
-        gameListFilePath = os.path.join(filePath, "gameList.json")
         # Searches json file for the data related to the game name provided
-        with open(gameListFilePath,) as f:
+        with open('../../gameList.json', ) as f:
             gameListData = json.load(f)
         for gameData in gameListData["applist"]["apps"]:
             if gameData["name"].lower() == gameName.lower():
