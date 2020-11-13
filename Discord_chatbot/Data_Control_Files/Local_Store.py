@@ -1,5 +1,5 @@
 """
-ile used for the locally storing data
+File used for the locally storing data
 Importing example
 
 from Local_Store import storageHandler
