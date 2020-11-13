@@ -1,7 +1,5 @@
 """
-FINISH COMMENTING AND POLISHING LATER
-
-File used for the locally storing data
+ile used for the locally storing data
 Importing example
 
 from Local_Store import storageHandler
@@ -10,44 +8,51 @@ storageHandler.readUserDetailsDict(776428752281065494)
 
 import csv, os
 
+
 class local_StorageM:
     """
     Class used for handling local storage
     """
     # Initialises class variables
     def __init__(self):
-        filePath = os.path.dirname(__file__)
-        csvFileName = "UserDetails.csv"
-        self.csvFilePath = os.path.join(filePath, csvFileName)
+        self.csvFilePath = "UserDetails.csv"
         self.detailsStored = ["ID", "steam_id", "favourite_streamers", "favourite_games", "favourite_genres"]
         self.listDetails = ["favourite_streamers", "favourite_games", "favourite_genres"]
+        self.setCSVPath()
+
+    # Sets the absolute path for the csv file
+    def setCSVPath(self):
+        filePath = os.path.dirname(__file__)
+        self.csvFilePath = os.path.join(filePath, self.csvFilePath)
 
     def readUserDetails(self, userID):
         """
-        Retrieve the details about a specific user given their ID
+        Retrieve the stored details regarding a specific user given their ID
 
-        :param userID:
-        :return:
+        :param userID: str/int - discord ID of the user of interest
+        :return: A ordered list containing the users details, following the order of "self.detailsStored"
         """
-        rows = []
+        # Opens csv containing user data
         with open(self.csvFilePath, "r") as csvFile:
-            for row in csv.reader(csvFile):
-                if row and row[0]:
-                    rows.append(row)
-        amountOfRows = len(rows)
+            heldRows = list(csv.reader(csvFile))
+        # Prepares important variables for a binary search
+        amountOfRows = len(heldRows)
         lowerIndex = 0
         higherIndex = amountOfRows - 1
         userDetails = False
+        # Search until the required details are found or all stored details have been searched
         while lowerIndex <= higherIndex:
-            currentRowIndex = (higherIndex+lowerIndex)//2
-            currentRowID = int(rows[currentRowIndex][0])
+            currentRowIndex = (higherIndex + lowerIndex)//2
+            currentRowID = int(heldRows[currentRowIndex][0])
+            # Required details was found
             if currentRowID == userID:
-                userDetails = rows[currentRowIndex]
+                userDetails = heldRows[currentRowIndex]
                 break
             elif currentRowID > userID:
                 higherIndex = currentRowIndex - 1
             elif currentRowID < userID:
                 lowerIndex = currentRowIndex + 1
+        # Returns false if the users data was not found
         if not userDetails:
             return False
         while len(userDetails) != len(self.detailsStored):
@@ -56,99 +61,107 @@ class local_StorageM:
             if self.detailsStored[i] in self.listDetails:
                 userDetails[i] = userDetails[i].split(",")
 
+        # Returns the users details
         return userDetails
 
-
     def readUserDetailsDict(self, userID):
+        """
+        Retrieve the stored details regarding a specific user given their ID as a dictionary
+
+        :param userID: str/int - discord ID of the user of interest
+        :return: A dictionary containing the users details
+        """
+        # Retrieves the users details as a list or False if their details were not found
         userDetails = self.readUserDetails(userID)
         if not userDetails:
             return False
+        # Creates a dictionary containing the users details
         dictDetails = {}
         for i in range(0, len(userDetails)):
             dictDetails[self.detailsStored[i]] = userDetails[i]
         return dictDetails
 
-
     # Do not access directly, I will write functions as to correctly format the parameter before passing
     def writeUserDetails(self, *userDetails):
         """
-        Writes the user's details to a locally stored CSV file.
+        Used to write a users details to a locally stored csv file
 
-        # To be changed
-        If the user's ID is found to be already within the CSV file, old data is overwritten
-        Otherwise, a new row is created to hold the details at the correct position to maintain order.
+        Formatting when calling method
+        storageHandler.writeUserDetails(userID, attributeName, attributeValue, attributeName, attributeValue)
+        You can continuously add attribute names and their corresponding values if you follow the format
+
+        :param userDetails: A list containing all arguments passed to the method of which is all the
+        provided details regarding the user
         """
-        rows = []
-        # Ensures passed keys are valid
+        # Ensures passed attribute names are valid
         for i in range(1, len(userDetails), 2):
             if not userDetails[i] in self.detailsStored:
                 raise ValueError('Invalid parameters, please refer to method documentation')
+        # Retrieves data held in the csv file
         with open(self.csvFilePath, "r") as csvFile:
-            for row in csv.reader(csvFile):
-                if row and row[0]:
-                    rows.append(row)
+            heldRows = list(csv.reader(csvFile))
         heldData = False
-        if len(rows) != 0:
-            amountOfRows = len(rows)
+        # Checks if the users ID is already stored within the csv
+        # Run if statement if data is held within the csv
+        if len(heldRows) != 0:
+            # Prepares important variables for a binary search
+            amountOfRows = len(heldRows)
             lowerIndex = 0
             higherIndex = amountOfRows - 1
             userID = userDetails[0]
+            # Search until the required details are found or all stored details have been searched
             while lowerIndex <= higherIndex:
                 currentRowIndex = (higherIndex + lowerIndex) // 2
-                currentRowID = int(rows[currentRowIndex][0])
-                belowRowID = int(rows[currentRowIndex-1][0])
+                currentRowID = int(heldRows[currentRowIndex][0])
+                # Currently held user details were found
                 if currentRowID == userID:
-                    heldData = rows[currentRowIndex]
-                    break
-                elif False and belowRowID == userID:
-                    currentRowIndex -= 1
-                    heldData = rows[belowRowID]
-                    break
-                elif False and higherIndex - lowerIndex < 2:
-                    if higherIndex == 1:
-                        currentRowIndex = 0
-                        break
-                    elif lowerIndex == amountOfRows - 2:
-                        if int(rows[currentRowIndex+1][0]) <= userID:
-                            currentRowIndex += 2
-                        break
-                elif currentRowID > userID > belowRowID:
+                    heldData = heldRows[currentRowIndex]
                     break
                 elif currentRowID > userID:
                     higherIndex = currentRowIndex - 1
                 elif currentRowID < userID:
                     lowerIndex = currentRowIndex + 1
+        # If there was no data held in the csv
         else:
             currentRowIndex = 0
 
+        # Run if the user was already in the list of user details
         if heldData:
-            storeData = rows[currentRowIndex]
+            storeData = heldData
+            # Ensures the data to be stored is of the expected length
             while len(storeData) != len(self.detailsStored):
                 storeData.append("")
-            # for i in range(1, len(userDetails)):
+            # Sets the data to be stored
             for i in range(1, min(len(self.detailsStored), len(userDetails)), 2):
-                # For now we only overwrite held data
+                # Checks if the attribute name is within the list of stored attributes
                 if userDetails[i] in self.detailsStored:
-                    if userDetails[i] in self.listDetails and userDetails[i] != "":
+                    # Checks if the attribute name indicates the attribute is to be stored as a list
+                    if userDetails[i] in self.listDetails:
                         multipleValue = storeData[self.detailsStored.index(userDetails[i])].split(",")
+                        # If the data to be added to the list attribute is already in the list, move that attribute
+                        # to the end of the list to represent it's higher importance
                         if userDetails[i+1] in multipleValue:
                             multipleValue.remove(userDetails[i+1])
                             multipleValueString = ""
                             for value in multipleValue:
                                 multipleValueString += value + ","
                             storeData[self.detailsStored.index(userDetails[i])] = multipleValueString + str(userDetails[i + 1])
-                            # CHECK AGAIN
+                        # Limits the attributes list to 20 values
                         elif len(multipleValue) > 19:
                             multipleValue = ''.join(multipleValue[1:])
                             storeData[self.detailsStored.index(userDetails[i])] = multipleValue + "," + str(userDetails[i + 1])
+                        # Add new value to the end of the list
                         else:
                             storeData[self.detailsStored.index(userDetails[i])] += "," + str(userDetails[i + 1])
+                    # Replace the data held for the specific attribute
                     else:
                         storeData[self.detailsStored.index(userDetails[i])] = userDetails[i + 1]
+                # Raises error if the attribute name is invalid
                 else:
                     raise ValueError("Invalid attribute name - refer to documentation")
+        # User had no details stored in the csv
         else:
-            # Add the ability to change a users ID such that they can transfer data across accounts
+            # Sets the data to be stored
             storeData = [userDetails[0]]
             for detailData in self.detailsStored[1:]:
                 if detailData in userDetails:
@@ -157,26 +170,31 @@ class local_StorageM:
                 else:
                     storeData.append("")
 
+        # Writes all users details, including the newly added details, to a ordered csv
         with open(self.csvFilePath, "w", newline="") as csvFile:
             writer = csv.writer(csvFile)
             indexTracker = 0
-            for currentRow in rows:
+            for currentRow in heldRows:
+                # Users details are being updated
                 if heldData and indexTracker == currentRowIndex:
                     storeList = [storeData]
+                # Users details are added to csv but the users details were not previously stored
                 elif indexTracker == currentRowIndex:
+                    # Details to be stored is greater than the lowest details
                     if int(storeData[0]) > int(currentRow[0]):
                         storeList = [currentRow, storeData]
                     else:
                         storeList = [storeData, currentRow]
                 else:
                     storeList = [currentRow]
+                # Actually writes the data to the csv
                 for storeRow in storeList:
                     writer.writerow(storeRow)
                 indexTracker += 1
             # Allows writing to an empty csv file
-            if not rows:
-                with open(self.csvFilePath, "w", newline="") as csvFile:
-                    writer = csv.writer(csvFile)
-                    writer.writerow(storeData)
+            if not heldRows:
+                writer = csv.writer(csvFile)
+                writer.writerow(storeData)
 
 storageHandler = local_StorageM()
+
