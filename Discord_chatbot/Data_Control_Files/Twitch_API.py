@@ -7,7 +7,7 @@ steamHandler.gamePlayerCount(730)
 """
 
 # Imports required modules
-import urllib.request, json
+import urllib.request, json, os
 
 
 class twitch_APIM:
