@@ -24,8 +24,10 @@ class twitch_APIM:
 
     # Sets the crucial API keys
     def __setKeys(self):
+        filePath = os.path.dirname(__file__)
+        keyFile = os.path.join(filePath, 'Keys_DO_NOT_UPLOAD.txt')
         # Retrieves keys from the text file. Text file is used to simplicity and ease of editing for my peers.
-        with open('Keys_DO_NOT_UPLOAD.txt', 'r') as keyFile:
+        with open(keyFile, 'r') as keyFile:
             keyData = keyFile.read()
         keyData = keyData.replace(" ", "")
         keyDataList = keyData.split("\n")
