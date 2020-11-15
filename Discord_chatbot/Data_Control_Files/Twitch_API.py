@@ -17,11 +17,27 @@ class twitch_APIM:
 
     # Initialises class variables
     def __init__(self):
-        # Required private codes for accessing the twitch API
-        # Variables replaced by fake codes to prevent leaks
-        # If you do not know the values of these codes then ask for them in the teams chat
-        self.clientID = "Secret"
-        self.auth = "Secret"
+        # Required private keys for accessing the twitch API
+        self.__clientID = ""
+        self.__auth = ""
+        self.__setKeys()
+
+    # Sets the crucial API keys
+    def __setKeys(self):
+        # Retrieves keys from the text file. Text file is used to simplicity and ease of editing for my peers.
+        with open('Keys_DO_NOT_UPLOAD.txt', 'r') as keyFile:
+            keyData = keyFile.read()
+        keyData = keyData.replace(" ", "")
+        keyDataList = keyData.split("\n")
+        # Split beats .index
+        for i in range(0, len(keyDataList)):
+            keyDataValue = keyDataList[i].split("=")
+            if keyDataValue[0] == "TwitchClientIDkey":
+                self.__clientID = keyDataValue[1]
+            elif keyDataValue[0] == "TwitchAuthenticationkey":
+                self.__auth = keyDataValue[1]
+        if self.__auth == "" or self.__clientID == "":
+            raise ValueError('Missing API key/s - Please check the Keys text file.')
 
     def retrieveData(self, url):
         """
@@ -31,9 +47,13 @@ class twitch_APIM:
         :return: The data retrieved from the given url as a dictionary
         """
         # Opens the required page with necessary data as headers
-        request = urllib.request.Request(url, headers={"Authorization": "Bearer " + self.auth,
-                                                       'Client-ID': self.clientID})
-        page = urllib.request.urlopen(request)
+        request = urllib.request.Request(url, headers={"Authorization": "Bearer " + self.__auth,
+                                                       'Client-ID': self.__clientID})
+        # Use of try/except to inform the programmer if their API keys are invalid to resolve common errors
+        try:
+            page = urllib.request.urlopen(request)
+        except urllib.error.HTTPError:
+            raise ValueError("Incorrect API key/s - Please check the Keys text file.")
         # Retrieves the required data held in the page abd returns it
         pageData = json.loads(page.read().decode())
         return pageData
