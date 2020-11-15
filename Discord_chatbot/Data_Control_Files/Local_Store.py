@@ -16,7 +16,7 @@ class local_StorageM:
     # Initialises class variables
     def __init__(self):
         self.csvFilePath = "UserDetails.csv"
-        self.detailsStored = ["ID", "steam_id", "favourite_streamers", "favourite_games", "favourite_genres"]
+        self.detailsStored = ["ID", "steam_id", "favourite_streamers", "favourite_games", "favourite_genres", "tracked_game", "tracked_stream"]
         self.listDetails = ["favourite_streamers", "favourite_games", "favourite_genres"]
         self.setCSVPath()
 
@@ -24,6 +24,35 @@ class local_StorageM:
     def setCSVPath(self):
         filePath = os.path.dirname(__file__)
         self.csvFilePath = os.path.join(filePath, self.csvFilePath)
+
+    def trackedGameList(self):
+        """
+        Add documentation later
+
+        :return:
+        """
+        # Opens csv containing user data
+        with open(self.csvFilePath, "r") as csvFile:
+            heldRows = list(csv.reader(csvFile))
+        requiredDataIndex = self.detailsStored.index("tracked_game")
+        trackedList = []
+        for userData in heldRows:
+            if len(userData) > requiredDataIndex:
+                if userData[requiredDataIndex]:
+                    trackedList.append([userData[0], userData[requiredDataIndex]])
+        return trackedList
+
+    def trackedStreamList(self):
+        # Opens csv containing user data
+        with open(self.csvFilePath, "r") as csvFile:
+            heldRows = list(csv.reader(csvFile))
+        requiredDataIndex = self.detailsStored.index("tracked_stream")
+        trackedList = []
+        for userData in heldRows:
+            if len(userData) > requiredDataIndex:
+                if userData[requiredDataIndex]:
+                    trackedList.append([userData[0], userData[requiredDataIndex]])
+        return trackedList
 
     def readUserDetails(self, userID):
         """
