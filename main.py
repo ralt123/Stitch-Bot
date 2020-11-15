@@ -168,5 +168,4 @@ class stitchBot(commands.Bot):
 
 if __name__ == '__main__':
     bot = stitchBot(prefix='!')
-    # bot.run('Nzc1Mzg0NTE2NzUxMTMwNjI0.X6ljGg.Gapcl2lnc_pqNuvTuZ3l2MNOtYI')
-    bot.run('NzcxNzM2MzExMjI0NDY3NDU3.X5wdcg.rTamw-fIcHyNdXMalAEMgsufDFU')
+    bot.run('')
