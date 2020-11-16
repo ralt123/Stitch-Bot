@@ -8,6 +8,7 @@ steamHandler.gamePlayerCount(730)
 
 # Imports required modules
 import urllib.request, json, os
+from datetime import datetime, timedelta, timezone
 
 
 class twitch_APIM:
@@ -136,6 +137,47 @@ class twitch_APIM:
                 topClipsData = self.retrieveData(url)
                 cursorKey = topClipsData["pagination"]["cursor"]
         return clipList
+
+    def latestStreamerClips(self, streamerID):
+        """
+        Used to retrieve clips from a streamers latest stream
+
+        :param streamerID: String containing the ID of the streamer in question
+        :return the clips url
+        """
+
+        # Getting Two time variables in rfc3339 format
+        # str - final_start is a rfc3339 timestamp for exactly 1 day ago
+        # str - final_end is a rfc3339 timestamp for the time the variable was initiated
+        # lots of string manipulation is needed to make the variables be in the correct format for the API
+        # Example output: 2020-11-16T14:16:33Z
+
+        # started_at argument:
+        time_minus_a_day = datetime.today() - timedelta(days=1)
+        start_time = time_minus_a_day.isoformat()
+        manip = start_time.split(':')
+        manip2 = "{:.0f}".format(float(manip[2]))
+        if float(manip2) < 10:
+            manip2 = f'0{manip2}'
+        manip2 = manip2.replace('.', ':')
+        final_start = f'{manip[0]}:{manip[1]}:{manip2}Z'
+
+        # ended_at argument
+        time = datetime.today().isoformat()
+        manip3 = time.split(':')
+        print(manip3[2])
+        manip4 = "{:.0f}".format(float(manip3[2]))
+        if float(manip4) < 10:
+            manip4 = f'0{manip4}'
+        print(manip4)
+        manip4 = manip4.replace('.', ':')
+        final_end = f'{manip3[0]}:{manip3[1]}:{manip4}Z'
+        print(final_end)
+
+        clipsDict = self.retrieveData(f"https://api.twitch.tv/helix/clips?broadcaster_id={streamerID}&first=1&started_at={final_start}&ended_at={final_end}")
+        clip = clipsDict['data'][0]
+        clip = clip['url']
+        return clip
 
 
 twitchHandler = twitch_APIM()
