@@ -218,10 +218,12 @@ class steam_APIM:
 
     def getUserSteamID(self, userURL):
         """
-        Used to find the steam ID of a user given their steam URL string.
+        Used to find the steam ID of a user given their steam vanity ID string.
         The required section of the user's URL is the unique portion of which acts as an ID
 
-        :param userURL: str or int - The unique URL of the user
+        https://steamcommunity.com/id/vanityID/
+
+        :param userURL: str or int - The unique vanity ID of the user's URL
         :return:
         """
         # Defines the webpage that contains the required data
