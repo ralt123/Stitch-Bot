@@ -104,5 +104,38 @@ class twitch_APIM:
         else:
             return False
 
+    def topStreamerClips(self, streamerID):
+        """
+        Used to retrieve the top 5 clips of a streamer given their ID.
+
+        :param streamerID: str/int - ID of streamer
+        :return: List or False - The list contains sublists of containg clip data.
+        Sublist index 0 contains the clip URL whilst index 1 contains the clips name. As example is given below
+        [[clipUrl, clipName], [clipURL, clipName], [clipURL, clipName], [clipURL, clipName], [clipURL, clipName]]
+
+        Returns False if the streamer was not found or if the given streamer has no clips
+        """
+        # Retrieves the required data by using the twitch api
+        topClipsData = self.retrieveData("https://api.twitch.tv/helix/clips?first=5&broadcaster_id=" + str(streamerID))
+        # Returns False if the streamer was not found or if the given streamer has no clips
+        if not topClipsData["data"]:
+            return False
+        clipList = []
+        # cursorKey is required due to inconsistencies in the twitch API
+        cursorKey = topClipsData["pagination"]["cursor"]
+        # Repeats until the top 5 clips are retrieved, to fix the API inconsistency
+        while len(clipList) != 5:
+            # Only necessary data is appended to the list that is to be returned
+            for clipData in topClipsData["data"]:
+                clipList.append([clipData["url"], clipData["title"]])
+            # In the event that less clip data is retrieved from the twitch API than expected, the remaining data that is required is retrieved
+            if len(clipList) != 5:
+                requiredClips = 5 - len(clipList)
+                url = "https://api.twitch.tv/helix/clips?first=" + str(requiredClips) + "&after=" + str(
+                    cursorKey) + "&broadcaster_id=" + str(streamerID)
+                topClipsData = self.retrieveData(url)
+                cursorKey = topClipsData["pagination"]["cursor"]
+        return clipList
+
 
 twitchHandler = twitch_APIM()
