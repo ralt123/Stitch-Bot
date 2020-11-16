@@ -286,5 +286,14 @@ class steam_APIM:
             return {"free": True}
         return False
 
+    def getGameTrailers(self, gameID):
+        """
+        Commenting later
+        """
+        url = "https://store.steampowered.com/api/appdetails/?appids=" + str(gameID)
+        gameData = self.retrieveData(url)
+        trailerData = gameData[str(gameID)]["data"]["movies"][0]["mp4"]["480"]
+        return trailerData
+
 
 steamHandler = steam_APIM()
