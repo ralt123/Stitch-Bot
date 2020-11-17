@@ -1,4 +1,5 @@
 import discord
+import sys, os
 from discord.ext import commands
 from Discord_chatbot.Data_Control_Files.Steam_API import *
 from Discord_chatbot.Data_Control_Files.Twitch_API import *
@@ -12,21 +13,32 @@ class stitchBot(commands.Bot):
         self.online = "[StitchBot] Online!"
         self.command_set()
         self.event_set()
+        self.guild_dict = {}
         self.channel_list = []
         self.last_message = ''
+        self.embed = discord.Embed()
 
     async def on_ready(self):
-        print(self.online)
         self.channels_to_list()
-        channel = self.channel_list[0]
-        await channel.send("**✅ [StitchBot] Online!**")
+        for guild in self.guilds:
+            # gif
+            path = os.path.dirname(__file__)
+            gif_path = "../Discord-Bot/images/Stitch.gif"
+            final_gif_path = os.path.join(path, gif_path)
+            file = discord.File(final_gif_path)
+
+            await guild.text_channels[0].send('✅**Online!**')
+            await guild.text_channels[0].send(file=file)
 
     def channels_to_list(self):
         print('started')
-        for guild in bot.guilds:
+        for guild in self.guilds:
             for channel in guild.text_channels:
                 self.channel_list.append(channel)
                 print(self.channel_list)
+            self.guild_dict[guild] = self.channel_list
+
+        print(self.channel_list, self.guild_dict)
 
     def event_set(self):
 
@@ -95,6 +107,10 @@ class stitchBot(commands.Bot):
             try:
                 print('searching')
                 streamers_id = twitchHandler.getStreamerID(streamers_name.content)
+
+                if not streamers_id:
+                    raise Exception('Streamer not Found')
+
                 print(streamers_id)
                 stream_checker = twitchHandler.checkIfStreaming(streamers_id)
                 if not stream_checker:
@@ -127,8 +143,8 @@ class stitchBot(commands.Bot):
 ''')
 
             except Exception as i:
-                print('failed to find', i)
-                await ctx.channel.send('**Streamer not found**')
+                print('Error Occurred:', i)
+                await ctx.channel.send(f'**{i}**')
 
         @self.command()
         async def game(ctx):
@@ -140,37 +156,64 @@ class stitchBot(commands.Bot):
             game_name = await bot.wait_for('message', check=check)
 
             try:
-                steamHandler.storeGameList()
                 print('searching')
                 game_id = steamHandler.findGameID(game_name.content)
-                player_count = steamHandler.gamePlayerCount(game_id)
-                game_desc = steamHandler.gameDescription(game_id)
-                game_cost = steamHandler.getGamePrice(game_id)
+                if not game_id:
+                    raise Exception('Game not found')
 
-                if game_cost['free']:
+                def game_price_calc(id):
+                    price_dict = steamHandler.getGamePrice(id)
+                    if price_dict['free']:
+                         normal_price = 0
+                         current_price = 0
+                         money_saved = 0
+                         sale = False
+                    elif price_dict['normal_price'] == '':
+                        normal_price = 0
+                        current_price = price_dict['current_price']
+                        money_saved = 0
+                        sale = False
+
+                    else:
+                        current_price = price_dict['current_price']
+                        normal_price = price_dict['normal_price']
+                        sale = True
+                        x = float(price_dict['normal_price'][1:])
+                        y = float(price_dict['current_price'][1:])
+                        z = price_dict['current_price'][:1]
+                        money_saved = f'{z}{x-y}'
+                    return normal_price, current_price, money_saved, sale
+
+                normal_price, current_price, money_saved, sale = game_price_calc(game_id)
+
+                if normal_price == 0 and current_price == 0 and money_saved == 0:
                     game_cost = 'Free'
 
-                elif float(game_cost['normal_price'][1:]) > float(game_cost['current_price'][1:]):
-                    current_price = game_cost['current_price']
-                    print()
-                    money_saved = (float(game_cost['normal_price'][1:]) - float(game_cost['current_price'][1:]))
+                elif sale:
+                    game_cost = f'Sale Price: {current_price}\n{money_saved} Off!'
 
-                    game_cost = f'''Sale Price:{current_price}
-+ {game_cost['normal_price'][0]}{"%.2f" % money_saved} Off!'''
                 else:
-                    current_price = game_cost['current_price']
-                    game_cost = f'Game Price: {current_price}'
+                    game_cost = f'Price: {current_price}'
+
+                player_count = steamHandler.gamePlayerCount(game_id)
+                game_desc = steamHandler.gameDescription(game_id)
+                game_trailer = steamHandler.getGameTrailers(game_id)
 
                 await ctx.channel.send(f'''** - {game_name.content}**
 ```diff
 + {game_cost}
 + Player Count: {player_count}
 + Game Description:\n {game_desc}
-```''')
++ Trailer:
+```
+{game_trailer}''')
 
             except Exception as i:
-                print('failed to find', i)
-                await ctx.channel.send('**Game not found**')
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(exc_type, fname, exc_tb.tb_lineno)
+                print('Error Occurred:', i)
+                await ctx.channel.send(f'**{i}**')
 
         @self.command()
         async def stats(ctx):
