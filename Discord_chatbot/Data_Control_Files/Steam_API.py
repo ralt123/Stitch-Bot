@@ -61,8 +61,7 @@ class steam_APIM:
     # Merge sort method was made myself so it's efficiency may not be optimal but it shall suffice
     # As storing the game list is not for frequent use, I don't plan on continuing to optimise the sorting method.
     # Uses iteration over recursion as the large size of the gameList to be sorted would use a lot of space in recursion
-    @staticmethod
-    def gameListMergeSort(unsortedGL):
+    def _gameListMergeSort(self, unsortedGL):
         """
         Method used to sort the list of all steam games by name.
 
@@ -70,6 +69,11 @@ class steam_APIM:
         :return: List of all sorted steam games, ascending
         """
         startingSize = len(unsortedGL)
+
+        # Converts names into their alphanumeric equivalent so they are easier for user to specify
+        for i in range(0, len(unsortedGL)):
+            unsortedGL[i]["name"] = self.stringForComparison(unsortedGL[i]["name"])
+
         # Sorts every pair to be in order
         for i in range(0, len(unsortedGL) - 1, 2):
             if unsortedGL[i + 1]["name"] < unsortedGL[i]["name"]:
@@ -126,7 +130,7 @@ class steam_APIM:
             pageData = json.loads(openPage.read().decode())
         pageData = pageData["applist"]["apps"]
         # Sorts the game list by name using merge sort
-        sortedGameList = self.gameListMergeSort(pageData)
+        sortedGameList = self._gameListMergeSort(pageData)
         # Stores the data in a .json file
         with open(self.gameList, "w") as jsonFile:
             json.dump(sortedGameList, jsonFile)
@@ -148,6 +152,7 @@ class steam_APIM:
 
         searchingForIDs = True
         gameIDs = []
+        gameName = self.stringForComparison(gameName)
         # As some games have the same name, searching only concludes until all games of a given name are found
         while searchingForIDs:
             # Sets key variables such as the higher and lower index
@@ -158,7 +163,7 @@ class steam_APIM:
             # Repeats until the game is found within the list or until the entire list has been searched
             while lowerIndex <= higherIndex:
                 currentGameIndex = (higherIndex + lowerIndex) // 2
-                currentGameName = gameListData[currentGameIndex]["name"]
+                currentGameName = self.stringForComparison(gameListData[currentGameIndex]["name"])
                 # Game has been found and the game's ID is returned
                 if currentGameName == gameName:
                     gameIDs.append(gameListData[currentGameIndex]["appid"])
@@ -199,7 +204,6 @@ class steam_APIM:
         # Opens the webpage for data retrieval, page is closed once the data is retrieved
         data = self.retrieveData(url)
         # Returns player count as a an integer
-        # Example - "2305"
         return int(data["response"]["player_count"])
 
     def gameDescription(self, gameID):
@@ -277,23 +281,330 @@ class steam_APIM:
         url = "https://store.steampowered.com/api/appdetails?appids=" + str(gameID)
         # Opens the webpage for data retrieval, page is closed once the data is retrieved
         data = self.retrieveData(url)
+        # Generates the dictionary to be returned
         if "price_overview" in data[str(gameID)]["data"]:
             priceDict = {"normal_price": data[str(gameID)]["data"]["price_overview"]["initial_formatted"],
                          "current_price": data[str(gameID)]["data"]["price_overview"]["final_formatted"], "free": False}
+            # Checks if the game is on deal
+            if priceDict["normal_price"]:
+                priceDict["on_deal"] = "True"
+            else:
+                priceDict["on_deal"] = "False"
             return priceDict
         # Returns short description
         if data[str(gameID)]["data"]["is_free"]:
             return {"free": True}
         return False
 
+    def checkPlayingGame(self, userID):
+        """
+        Used to return the name of the game a given user is currently playing.
+
+        :param userID: str/int - Steam ID of user
+        :return: str/boolean - Name of game the user is playing, False if the given ID was invalid
+        and returns the string "nothing/private" if the user is not playing a game or has a private profile
+        """
+        # Retrieving required data regarding the user
+        url = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?steamids={str(userID)}&key={self.__apiKey}"
+        userInfo = self.retrieveData(url)
+        # Returns False if the given ID was invalid
+        if len(userInfo) == 0:
+            return False
+        else:
+            # Extracts user info
+            userInfo = userInfo["response"]["players"][0]
+        # If the user is playing a game the game's name is returned
+        if "gameextrainfo" in userInfo:
+            return userInfo["gameextrainfo"]
+        else:
+            return "nothing/private"
+
+    @staticmethod
+    def stringForComparison(rawString):
+        """
+        Used to alter a given string to only contain alphanumeric characters, lower case only.
+        Used to allow non-exact searches in an algorithm to return the desired result
+
+        :param rawString: str - String to be altered
+        :return: str - rawString but altered to only contain alphanumeric lowercase characters
+        """
+        # Changes string to prepare for comparison, most commands used are self explanatory
+        if rawString.isalnum():
+            preparedString = rawString.lower()
+        # Could check if the string is alphanumeric after removing a non-alphanumeric character but not necessary as
+        # only short strings will be used
+        else:
+            preparedString = ""
+            # Removes any non-alphanumeric characters
+            for character in rawString:
+                if character.isalnum():
+                    preparedString += character
+            preparedString = preparedString.lower()
+        return preparedString
+
+    # Tried using a new implementation of discord of which I haven't used before
+    # Uses recursion and efficiency could be improved however as I plan on only using
+    # this method for relatively small lists of data, to save time, it should suffice
+    def _friendQuickSort(self, playingFriends):
+        """
+        Used to sort a list of sub lists containing a user and the game they are currently playing
+
+        :param playingFriends: list - list of sub lists containing a user and the game they are currently playing
+        :return: list - the given list but sorted by game
+        """
+        # Implementation of quicksort
+        # Key variables
+        pivot = self.stringForComparison(playingFriends[-1:][0][1])
+        pivotData = playingFriends[-1:][0]
+        toSort = playingFriends[:-1]
+        marker1 = 0
+        marker2 = len(toSort) - 1
+        marker1Stopped = False
+        marker2Stopped = False
+        # Whilst the markers are not adjacent
+        while marker1 < marker2 - 1:
+            if not marker1Stopped:
+                # Stops marker as an out of place element has been found
+                if self.stringForComparison(toSort[marker1][1]) > pivot:
+                    marker1Stopped = True
+                # Moves maker as the element was in place
+                else:
+                    marker1 += 1
+            # Marker1 has priority so this is only ran when marker1 has stopped
+            if marker1Stopped and not marker2Stopped:
+                # Stops marker as an out of place element has been found
+                if toSort[marker2][1].lower() < pivot:
+                    marker2Stopped = True
+                # Moves maker as the element was in place
+                else:
+                    marker2 -= 1
+            # Run when both markers have stopped as hey have both encountered an out of place element
+            if marker1Stopped and marker2Stopped:
+                # Swaps out of place elements and sets the markers as being mobile
+                toSort[marker1], toSort[marker2] = toSort[marker2], toSort[marker1]
+                marker1Stopped, marker2Stopped = False, False
+                marker1 += 1
+                if marker1 < marker2 - 1:
+                    marker2 -= 1
+        # Ensures the element at marker2 is sorted as the previous while loop may end with unsorted data due to
+        # marker1 being given priority
+        if self.stringForComparison(toSort[marker2][1]) < pivot:
+            toSort[marker1], toSort[marker2] = toSort[marker2], toSort[marker1]
+        # If the element at marker1 is larger than the pivot, the pivot is below that element
+        if self.stringForComparison(toSort[marker1][1]) > pivot:
+            toSort.append(pivot)
+            toSort[marker1], toSort[len(toSort) - 1] = toSort[len(toSort) - 1], toSort[marker1]
+            lowerSection = toSort[0:marker1]
+            higherSection = toSort[marker1 + 1:]
+        # If the element at marker2 is larger than the pivot, the pivot is below that element
+        elif self.stringForComparison(toSort[marker2][1]) > pivot:
+            toSort.append(pivot)
+            toSort[marker2], toSort[len(toSort) - 1] = toSort[len(toSort) - 1], toSort[marker2]
+            lowerSection = toSort[0:marker2]
+            higherSection = toSort[marker2 + 1:]
+        # If the element at marker2+1 is larger than the pivot, the pivot is below that element
+        elif marker2 + 1 < len(toSort) and toSort[marker2 + 1][0] > pivot:
+            toSort.append(pivot)
+            toSort[marker2 + 1], toSort[len(toSort) - 1] = toSort[len(toSort) - 1], toSort[marker2 + 1]
+            lowerSection = toSort[0:marker2 + 1]
+            higherSection = toSort[marker2 + 2:]
+        # The pivot is larger than all elements in the list
+        else:
+            lowerSection = toSort[:]
+            higherSection = []
+        # Recursive calls to sort each section
+        if len(lowerSection) > 1:
+            lowerSection = self._friendQuickSort(lowerSection)
+        if len(higherSection) > 1:
+            higherSection = self._friendQuickSort(higherSection)
+        # Prepares the list in a suitable format for returning
+        passResult = []
+        for i in lowerSection:
+            passResult.append(i)
+        passResult.append(pivotData)
+        for i in higherSection:
+            passResult.append(i)
+        return passResult
+
+    def friendsPlayingGame(self, userID):
+        """
+        Used to retrieve a sorted list of a user's friends of which are currently playing a game
+        and the name of the game the user is playing
+
+        :param userID: str/int - Steam ID of the user
+        :return: list/Boolean - sorted list of sub lists containing their friends name and the game their friend is
+        playing or False if the user has no friends or if their friends list is private
+        Example of returned list [[Andrew, Rocket League], [Jim, Counter Strike: Global Offensive]]
+        """
+        # Retrieves a list containing the user's friends
+        allFriends = self.getFriends(userID)
+        # Returns False if the user has no friends or if their friends list is priviate
+        if not allFriends:
+            return False
+        url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?steamids="
+        friendsList = []
+        # Can only check what games at most 100 users are playing through the steam API
+        for i in range(0, len(allFriends)):
+            # URL must be modified to contain the ID of at most 100 friends of the user
+            url += "," + allFriends[i]["steamid"]
+            # API call has reached it's maximum length, perform the call and prepare another
+            if (i+1) % 100 == 0:
+                allFriendData = self.retrieveData(url + "&key=" + self.__apiKey)
+                friendsList.append(allFriendData["response"]["players"])
+                url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?steamids="
+        # Performs the last data retrieval regarding the user's friends from the steam API
+        if not (i+1) % 100 == 0:
+            allFriendData = self.retrieveData(url + "&key=" + self.__apiKey)
+            friendsList.append(allFriendData["response"]["players"])
+        playingFriends = []
+        listMarker = 0
+        elementMarker = 0
+        # Retrieves the names and game being played by all friends currently playing a game
+        for i in range(0, len(allFriends)):
+            friendData = friendsList[listMarker][elementMarker]
+            if "gameextrainfo" in friendData:
+                playingFriends.append([friendData["personaname"], friendData["gameextrainfo"]])
+            elementMarker += 1
+            if elementMarker % 100 == 0:
+                elementMarker = 0
+                listMarker += 1
+        # Calls another method to sort the list then returns the sorted list
+        return self._friendQuickSort(playingFriends)
+
+    def getFriends(self, userID):
+        """
+        Used to retrieve all the friends of a given user.
+        The unix time of which is used in the dictionary can be converted to UTC in a separate method
+
+        :param userID: str/int - ID of user
+        :return: list - list containing dictionaries which contain the ID of the users friends, their relationship and
+        the time they became friends in unix.
+        Dictionary as {'steamid': 'friendsSteamID', 'relationship': 'friend', 'friend_since': unixTime}
+        """
+        # Retrieves the data regarding the user's friends
+        url = f"http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key={self.__apiKey}&steamid={str(userID)}&relationship=friend"
+        userInfo = self.retrieveData(url)
+        # Returns False if the user has no friends or if their friends list is private
+        if not userInfo:
+            return False
+        return userInfo["friendslist"]["friends"]
+
+    @staticmethod
+    def _unixToUTC(unixTime):
+        """
+        Used to convert unix time to UTC
+
+        :param unixTime: int - time to be converted in unix
+        :return: List containing the time in UTC
+        Return format [day, month, year, hour, minute, second]
+        """
+        # unix is the seconds since 1/1/1970 00:00 and therefore the method must take into consideration leap days
+        daysInMonths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        dayFromLeap = unixTime / 86400
+        # when the first leap day occurs from the epoch in days - calculation is left expanded to explain
+        firstLeap = (365*2) + 31 + 29
+        # when the leap day repeats in days - calculation is left expanded to explain
+        repeatLeap = (365 * 4) + 1
+        leapDays = 0
+        # Checks if a leap day must be considered
+        if dayFromLeap >= firstLeap:
+            dayFromLeap -= firstLeap
+            leapDays += 1
+            # Removes all leap days from prior years
+            while dayFromLeap >= repeatLeap:
+                dayFromLeap -= repeatLeap
+                leapDays += 1
+        # Checks if the year of the date is a leap year
+        if dayFromLeap < 366 - (31 + 29):
+            daysInMonths[1] = 29
+            leapDays -= 1
+        day = (unixTime / 86400) - leapDays
+        # Run if year of date is leap year
+        if daysInMonths[1] == 29:
+            year = 1970 + (day-1) / 365
+            day = (day-1) % 365
+            # Adds removed day
+            day += 1
+        else:
+            year = 1970 + day / 365
+            day = day % 365
+        month = 1
+        # Calculates the month and day
+        while day > daysInMonths[month-1]:
+            day -= daysInMonths[month-1]
+            month += 1
+        # As epoch is from 1st of jan not 0 of jan, add a day
+        day += 1
+        hour = (day % 1) * 24
+        minute = (hour % 1) * 60
+        second = round((minute % 1) * 60)
+        timeList = [int(day), int(month), int(year), int(hour), int(minute), second]
+        return timeList
+
+    def getFriendDate(self, userID1, userID2):
+        """
+        Used to retrieve the date, as a list, of which two users became friends
+
+        :param userID1: str/int - steamID of first user in friendship
+        :param userID2: str/int - steamID of second user in friendship
+        :return: list - UTC time when the friendship was established
+        Return format - [day, month, year, hour, minute, second]
+        """
+        # Retrieve a list containing basic details of all friendships that the user corresponding to userID1 is
+        # apart of
+        allFriends = self.getFriends(userID1)
+        # Run when the user corresponding to userID1 has a hidden friends list or if userID1 is invalid
+        if not allFriends:
+            # Swaps the variables values as only the user corresponding to the contents of "userID1"
+            # must have a public friends list
+            userID1, userID2 = userID2, userID1
+            allFriends = self.getFriends(userID1)
+            # Returns False in this selection if both given IDs are invalid or both user's have a private friends list
+            if not allFriends:
+                return False
+        # Checks list of user friends for the userID2
+        for friendInfo in allFriends:
+            if str(friendInfo["steamid"]) == str(userID2):
+                # Calls method to convert unix date to UTC
+                return self._unixToUTC(friendInfo["friend_since"])
+        # Returns False by the below return statement if the user's aren't friends
+        return False
+
+    def getFriendDateDict(self, userID1, userID2):
+        """
+        Used to retrieve the date, as a dictionary, of which two users became friends
+
+        :param userID1: str/int - steamID of first user in friendship
+        :param userID2: str/int - steamID of second user in friendship
+        :return: dictionary - UTC time when the friendship was established
+        Return format - {"day":day, "month":month, "year":year, "hour":hour, "minute":minute, "second":second}
+        """
+        # Retrieves the date, as a list, of which two users became friends
+        timeList = self.getFriendDate(userID1, userID2)
+        timeTypes = ["day", "month", "year", "hour", "minute", "second"]
+        timeDict = {}
+        # Creates the date dictionary by using the date list
+        for i in range(0, len(timeTypes)):
+            timeDict[timeTypes[i]] = timeList[i]
+        return timeDict
+
     def getGameTrailers(self, gameID):
         """
-        Commenting later
+        Returns the first trailer for a steam game
+
+        :param gameID: ID of the steam game in question
+        :return: str - Link to the game's trailer of which will display the embedded video within discord
         """
         url = "https://store.steampowered.com/api/appdetails/?appids=" + str(gameID)
-        gameData = self.retrieveData(url)
-        trailerData = gameData[str(gameID)]["data"]["movies"][0]["mp4"]["480"]
+        # Retrieve information regarding the given game
+        gameData = self.retrieveData(url)[str(gameID)]
+        # If the gameID is invalid then False is returned
+        if not gameData["success"]:
+            return False
+        # Extracts and returns the trailer
+        trailerData = gameData["data"]["movies"][0]["mp4"]["480"]
         return trailerData
 
 
+# Creates object
 steamHandler = steam_APIM()

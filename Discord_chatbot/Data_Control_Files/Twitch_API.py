@@ -8,7 +8,6 @@ steamHandler.gamePlayerCount(730)
 
 # Imports required modules
 import urllib.request, json, os
-from datetime import datetime, timedelta, timezone
 
 
 class twitch_APIM:
@@ -118,6 +117,7 @@ class twitch_APIM:
         """
         # Retrieves the required data by using the twitch api
         topClipsData = self.retrieveData("https://api.twitch.tv/helix/clips?first=5&broadcaster_id=" + str(streamerID))
+        # topClipsData = self.retrieveData(url)
         # Returns False if the streamer was not found or if the given streamer has no clips
         if not topClipsData["data"]:
             return False
@@ -132,12 +132,12 @@ class twitch_APIM:
             # In the event that less clip data is retrieved from the twitch API than expected, the remaining data that is required is retrieved
             if len(clipList) != 5:
                 requiredClips = 5 - len(clipList)
-                url = "https://api.twitch.tv/helix/clips?first=" + str(requiredClips) + "&after=" + str(
-                    cursorKey) + "&broadcaster_id=" + str(streamerID)
+                url = "https://api.twitch.tv/helix/clips?first=" + str(requiredClips) + "&after=" + str(cursorKey) + "&broadcaster_id=" + str(streamerID)
                 topClipsData = self.retrieveData(url)
                 cursorKey = topClipsData["pagination"]["cursor"]
         return clipList
 
+    # Method made by Jupiter
     def latestStreamerClips(self, streamerID):
         """
         Used to retrieve clips from a streamers latest stream
@@ -151,7 +151,7 @@ class twitch_APIM:
         # str - final_end is a rfc3339 timestamp for the time the variable was initiated
         # lots of string manipulation is needed to make the variables be in the correct format for the API
         # Example output: 2020-11-16T14:16:33Z
-
+        from datetime import datetime, timedelta
         # started_at argument:
         time_minus_a_day = datetime.today() - timedelta(days=1)
         start_time = time_minus_a_day.isoformat()
@@ -179,5 +179,51 @@ class twitch_APIM:
         clip = clip['url']
         return clip
 
+    def getGameID(self, gameName):
+        """
+        Used to retrieve the twitch ID of a given game
 
+        :param gameName: str - Name of the game in question
+        :return: str/Boolean - ID of given name or False if the given game name was invalid
+        """
+        # Replaces spaces in a format understood by the twitch API
+        gameName = gameName.replace(" ", "%20")
+        url = "https://api.twitch.tv/helix/games?name=" + gameName
+        # Retrieves required data
+        gameDetails = self.retrieveData(url)
+        # Return False if the given game name was invalid
+        if not gameDetails["data"]:
+            return False
+        # Return the ID of the given name
+        return gameDetails["data"][0]["id"]
+
+    def gameTopStreamers(self, gameIdentifier):
+        """
+        Used to retrieve a list containing the top english streamers for a given game
+
+        :param gameIdentifier: str/int - Name of game or ID of a game
+        :return: list - A list containing sublists which contain basic stream information for the top 5 english
+        streams playing the provided game. Sorted by most popular stream first then descending
+        """
+        # Runs if the name of a game is given rather than a game ID
+        if not gameIdentifier.isdigit():
+            # Retrieves the ID of a given name
+            gameIdentifier = self.getGameID(gameIdentifier)
+            # Return False if the given game name was invalid
+            if not gameIdentifier:
+                return False
+        url = f"https://api.twitch.tv/helix/streams?game_id={str(gameIdentifier)}&first=5&language=en"
+        # Retrieves required information regarding top 5 english streams playing the given game
+        gameStreamData = self.retrieveData(url)
+        # Game ID is invalid or no english streamers are playing the given game
+        if not gameStreamData["data"]:
+            return False
+        # Generates list to return
+        streamDataList = []
+        for streamData in gameStreamData["data"]:
+            dataList = [streamData["user_name"], streamData["title"], streamData["viewer_count"]]
+            streamDataList.append(dataList)
+        return streamDataList
+
+# Creates object
 twitchHandler = twitch_APIM()
