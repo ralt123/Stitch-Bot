@@ -271,4 +271,4 @@ class stitchBot(commands.Bot):
 
 if __name__ == '__main__':
     bot = stitchBot(prefix='!')
-    bot.run('')
+    bot.run('Nzc1Mzg0NTE2NzUxMTMwNjI0.X6ljGg.ELQ4-GXyq3UlCqYVYfwxv1Qh2ho')
