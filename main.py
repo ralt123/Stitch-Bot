@@ -339,7 +339,6 @@ class stitchBot(commands.Bot):
 + This is Stitch Bot ,It is an interactive Discord Bot that helps Gamers gain information about the games they love and the Streamers they watch. It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. 
 ```''')
 
-
 class encryptionAES128:
 
     def __init__(self, key):
@@ -377,11 +376,11 @@ class encryptionAES128:
 
 
 if __name__ == '__main__':
-    # x = encryption.encrypt('token')
+    # x = encryption.encrypt('')
     # print(x)
-    encrypted_token = b'\xd0\xa0\x85i"\xa2a\x0e\x9b\xad\x18\xbe\x86\xce\xfeA\x85l\xa9\xf4T<\xdeF\xf0 \xdd\xc6\x13c_E\xcd\x9dn5\xa72r\xa2x\xe8-\xcb\'\xd2Z\xa9\xc3\xae\xf3w\xa7\x1f\x08\xe0\xc7\xc2\x0e\xcc\xfd<G\xf2'
     decrypt_key = input('Enter Decrypt Key:')
-    encryption = encryptionAES128(f'{decrypt_key}')
+    encryption = encryptionAES128(decrypt_key)
+    encrypted_token = b'\xd0\xa0\x85i"\xa2a\x0e\x9b\xad\x18\xbe\x86\xce\xfeA\x85l\xa9\xf4T<\xdeF\xf0 \xdd\xc6\x13c_E\xc6^\xb6\xd6\xae\x96\x16\xa4\xa1\rq2\x00\x85\xb0\x80c\xc0\xea\x14\xe0%\xa9p\xee\x15\xf0Ix(\x19R'
     token = encryption.decrypt(encrypted_token)
     bot = stitchBot(prefix='!')
     bot.run(f'{token}')
