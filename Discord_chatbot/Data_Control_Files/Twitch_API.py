@@ -8,7 +8,7 @@ steamHandler.gamePlayerCount(730)
 
 # Imports required modules
 import urllib.request, json, os
-
+from Local_Store import storageHandler
 
 class twitch_APIM:
     """
@@ -109,7 +109,7 @@ class twitch_APIM:
         Used to retrieve the top 5 clips of a streamer given their ID.
 
         :param streamerID: str/int - ID of streamer
-        :return: List or False - The list contains sublists of containg clip data.
+        :return: List/False - The list contains sublists of containg clip data.
         Sublist index 0 contains the clip URL whilst index 1 contains the clips name. As example is given below
         [[clipUrl, clipName], [clipURL, clipName], [clipURL, clipName], [clipURL, clipName], [clipURL, clipName]]
 
@@ -197,7 +197,7 @@ class twitch_APIM:
         # Return the ID of the given name
         return gameDetails["data"][0]["id"]
 
-    def gameTopStreamers(self, gameIdentifier):
+    def gameTopStreamers(self, gameIdentifier, userID):
         """
         Used to retrieve a list containing the top english streamers for a given game
 
@@ -212,18 +212,49 @@ class twitch_APIM:
             # Return False if the given game name was invalid
             if not gameIdentifier:
                 return False
-        url = f"https://api.twitch.tv/helix/streams?game_id={str(gameIdentifier)}&first=5&language=en"
+        url = f"https://api.twitch.tv/helix/streams?game_id={str(gameIdentifier)}&first=15&language=en"
         # Retrieves required information regarding top 5 english streams playing the given game
         gameStreamData = self.retrieveData(url)
         # Game ID is invalid or no english streamers are playing the given game
         if not gameStreamData["data"]:
             return False
+        # Retrieves the names of streamers that have been blacklisted by the user
+        hiddenStreamers = storageHandler.readUserDetails(userID)
+        if hiddenStreamers:
+            hiddenStreamers = hiddenStreamers[7]
+
         # Generates list to return
         streamDataList = []
         for streamData in gameStreamData["data"]:
-            dataList = [streamData["user_name"], streamData["title"], streamData["viewer_count"]]
-            streamDataList.append(dataList)
-        return streamDataList
+            # Excludes blacklisted streamers
+            if not (hiddenStreamers and streamData["user_name"].lower() in hiddenStreamers):
+                dataList = [streamData["user_name"], streamData["title"], streamData["viewer_count"]]
+                streamDataList.append(dataList)
+        return streamDataList[:5]
+
+    def favouriteStreamersStreaming(self, userID):
+        """
+        Returns the stream details for any favourited streamers of which are currently streaming
+
+        :param userID: str/int - the user ID of the user
+        :return: list - List containing sublists of which contain stream data for favourited currently streaming
+        streamers. Returns False if either the user ID is invalid or if no favourited streamers are streaming
+        """
+        # Retrieves stored details for user
+        favouriteStreamers = storageHandler.readUserDetails(userID)
+        streamingFavourites = []
+        if favouriteStreamers:
+            # Extracts the list of favourited streamers
+            favouriteStreamers = favouriteStreamers[2]
+            # Produces the list of which is to be returned
+            for streamer in favouriteStreamers:
+                streamerStreamDetails = self.streamDetails(self.getStreamerID(streamer))
+                if streamerStreamDetails:
+                    streamingFavourites.append(streamerStreamDetails)
+        # Returns if the list isn't empty
+        if streamingFavourites:
+            return streamingFavourites
+        return False
 
 # Creates object
 twitchHandler = twitch_APIM()

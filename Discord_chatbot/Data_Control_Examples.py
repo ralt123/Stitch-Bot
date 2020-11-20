@@ -1,10 +1,13 @@
 """
 Contains examples on importing and using the methods
+
+These are examples, you are not supposed to run this file.
 """
 
 # Importing path will have to be modified depending on the location of the calling program
 from Data_Control_Files.Twitch_API import twitchHandler
 from Data_Control_Files.Steam_API import steamHandler
+from Data_Control_Files.Local_Store import storageHandler
 
 
 # Returns the ID of a streamer given their channel name
@@ -24,6 +27,9 @@ game_ID = twitchHandler.getGameID("rocket league")
 
 # Returns top 5 english streams for a given game name or given game ID
 top_streamers = twitchHandler.gameTopStreamers("rocket league")
+
+# Returns the stream details of currently streaming favourited streamers
+favourited_stream_details = twitchHandler.favouriteStreamersStreaming(759114545377893151)
 
 # Updates the .json game list. Retrieving such a large quantity of data takes several seconds.
 steamHandler.storeGameList()
@@ -64,3 +70,20 @@ friends_since_dictionary = steamHandler.getFriendDateDict(76561198023414915, 765
 # Returns URL of steam game trailer
 game_trailer = steamHandler.getGameTrailers(730)
 
+# Returns name of game
+game_name = steamHandler.getGameName(730)
+
+# Returns player count of favourite games
+favourited_playercounts = steamHandler.playerCountFavouriteGames(759114545377893151)
+
+# Writes details to local storage
+storageHandler.writeUserDetails(759114545377893151, "tracked_game", "counter strike global offensive", "favourite_games", "rust")
+
+# Returns user details from local store
+user_details = storageHandler.readUserDetails(759114545377893151)
+
+# Returns list of tracked games and their tracker
+tracked_games = storageHandler.trackedGameList(759114545377893151)
+
+# Returns list of tracked streamers and their tracker
+tracked_streamers = storageHandler.trackedStreamerList(759114545377893151)

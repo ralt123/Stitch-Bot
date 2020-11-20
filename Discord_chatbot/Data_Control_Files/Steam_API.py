@@ -7,7 +7,7 @@ steamHandler.gamePlayerCount(730)
 """
 
 import urllib.request, json, os
-
+from Local_Store import storageHandler
 
 class steam_APIM:
     """
@@ -203,6 +203,8 @@ class steam_APIM:
         url = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=" + str(gameID)
         # Opens the webpage for data retrieval, page is closed once the data is retrieved
         data = self.retrieveData(url)
+        if not data:
+            return False
         # Returns player count as a an integer
         return int(data["response"]["player_count"])
 
@@ -214,9 +216,10 @@ class steam_APIM:
         :return: The short description for the given steam game, retrieved by using the steam API, as a string
         """
         # Defines the webpage that contains the required data
-        url = "https://store.steampowered.com/api/appdetails?appids=" + str(gameID)
+        url = "https://store.steampowered.com/api/appdetails?l=en&appids=" + str(gameID)
         # Opens the webpage for data retrieval, page is closed once the data is retrieved
         data = self.retrieveData(url)
+        print(url)
         # Returns short description
         return data[str(gameID)]["data"]["short_description"]
 
@@ -593,7 +596,8 @@ class steam_APIM:
         Returns the first trailer for a steam game
 
         :param gameID: ID of the steam game in question
-        :return: str - Link to the game's trailer of which will display the embedded video within discord
+        :return: str/False - Link to the game's trailer of which will display the embedded video within discord or False
+        if an invalid gameID was given
         """
         url = "https://store.steampowered.com/api/appdetails/?appids=" + str(gameID)
         # Retrieve information regarding the given game
@@ -604,6 +608,47 @@ class steam_APIM:
         # Extracts and returns the trailer
         trailerData = gameData["data"]["movies"][0]["mp4"]["480"]
         return trailerData
+
+    def getGameName(self, gameID):
+        """
+        Used to retrieve the exact steam name of a game given its ID
+
+        :param gameID: str/int - steam ID of game
+        :return: str/boolean - Exact name of game or False if the given ID was invalid
+        """
+        url = "https://store.steampowered.com/api/appdetails/?appids=" + str(gameID)
+        # Retrieve information regarding the given game
+        gameData = self.retrieveData(url)[str(gameID)]
+        # If the gameID is invalid then False is returned
+        if not gameData["success"]:
+            return False
+        # Extracts the name of the game
+        gameName = gameData["data"]["name"]
+        return gameName
+
+    def playerCountFavouriteGames(self, userID):
+        """
+        Used to retrieve the exact name and player count of a given user's favourite games
+
+        :param userID: str/int - discord ID of user
+        :return: list - List containing sublists of which contain a favourited game's name and its player count
+        or False if an invalid user ID was given
+        """
+        # Retrieves the stored details for the given user ID
+        favouriteGames = storageHandler.readUserDetails(userID)
+        if favouriteGames:
+            # Extracts the list of games favourited by the user
+            playerCountList = []
+            favouriteGames = favouriteGames[3]
+            # Creates list to be returned
+            for game in favouriteGames:
+                gameID = self.findGameID(game)
+                if gameID:
+                    gameDiData = [self.getGameName(gameID), self.gamePlayerCount(gameID)]
+                    playerCountList.append(gameDiData)
+            return playerCountList
+        # Returns False if an invalid user ID was given
+        return False
 
 
 # Creates object

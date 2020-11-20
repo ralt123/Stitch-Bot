@@ -16,8 +16,8 @@ class local_StorageM:
     # Initialises class variables
     def __init__(self):
         self.csvFilePath = "UserDetails.csv"
-        self.detailsStored = ["ID", "steam_id", "favourite_streamers", "favourite_games", "favourite_genres", "tracked_game", "tracked_stream"]
-        self.listDetails = ["favourite_streamers", "favourite_games", "favourite_genres"]
+        self.detailsStored = ["ID", "steam_id", "favourite_streamers", "favourite_games", "favourite_genres", "tracked_game", "tracked_stream", "blacklisted_streamers"]
+        self.listDetails = ["favourite_streamers", "favourite_games", "favourite_genres", "blacklisted_streamers"]
         self.setCSVPath()
 
     # Sets the absolute path for the csv file
@@ -27,15 +27,17 @@ class local_StorageM:
 
     def trackedGameList(self):
         """
-        Add documentation later
+        Used to retrieve all the games of which are being tracked
 
-        :return:
+        :return: list - List containing sublists of which contain a user's ID and the game they are tracking
         """
         # Opens csv containing user data
         with open(self.csvFilePath, "r") as csvFile:
             heldRows = list(csv.reader(csvFile))
+        # Sets the index corresponding to the index of the required data
         requiredDataIndex = self.detailsStored.index("tracked_game")
         trackedList = []
+        # Produces the list to be returned
         for userData in heldRows:
             if len(userData) > requiredDataIndex:
                 if userData[requiredDataIndex]:
@@ -43,11 +45,18 @@ class local_StorageM:
         return trackedList
 
     def trackedStreamList(self):
+        """
+        Used to retrieve all the streams of which are being tracked
+
+        :return: list - List containing sublists of which contain a user's ID and the stream they are tracking
+        """
         # Opens csv containing user data
         with open(self.csvFilePath, "r") as csvFile:
             heldRows = list(csv.reader(csvFile))
+        # Sets the index corresponding to the index of the required data
         requiredDataIndex = self.detailsStored.index("tracked_stream")
         trackedList = []
+        # Produces the list to be returned
         for userData in heldRows:
             if len(userData) > requiredDataIndex:
                 if userData[requiredDataIndex]:
@@ -88,7 +97,7 @@ class local_StorageM:
             userDetails.append("")
         for i in range(0, len(self.detailsStored)):
             if self.detailsStored[i] in self.listDetails:
-                userDetails[i] = userDetails[i].split(",")
+                userDetails[i] = userDetails[i][1:].split(",")
 
         # Returns the users details
         return userDetails
@@ -122,10 +131,15 @@ class local_StorageM:
         :param userDetails: A list containing all arguments passed to the method of which is all the
         provided details regarding the user
         """
+        userDetails = list(userDetails)
         # Ensures passed attribute names are valid
         for i in range(1, len(userDetails), 2):
             if not userDetails[i] in self.detailsStored:
                 raise ValueError('Invalid parameters, please refer to method documentation')
+            elif isinstance(userDetails[i+1], str):
+                userDetails[i+1] = userDetails[i+1].lower()
+            if userDetails[i] == "favourite_streamers":
+                userDetails[i+1] = userDetails[i+1].replace(" ", "_")
         # Retrieves data held in the csv file
         with open(self.csvFilePath, "r") as csvFile:
             heldRows = list(csv.reader(csvFile))
@@ -176,7 +190,7 @@ class local_StorageM:
                                 multipleValueString += value + ","
                             storeData[self.detailsStored.index(userDetails[i])] = multipleValueString + str(userDetails[i + 1])
                         # Limits the attributes list to 20 values
-                        elif len(multipleValue) > 19:
+                        elif len(multipleValue) >= 10:
                             multipleValue = ''.join(multipleValue[1:])
                             storeData[self.detailsStored.index(userDetails[i])] = multipleValue + "," + str(userDetails[i + 1])
                         # Add new value to the end of the list
@@ -226,4 +240,3 @@ class local_StorageM:
                 writer.writerow(storeData)
 
 storageHandler = local_StorageM()
-
