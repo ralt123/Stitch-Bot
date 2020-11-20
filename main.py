@@ -1,23 +1,50 @@
+# imports:
 import discord
 import sys, os
 from discord.ext import commands
-from Discord_chatbot.Data_Control_Files.Steam_API import *
-from Discord_chatbot.Data_Control_Files.Twitch_API import *
+from discord.ext.commands import has_permissions
+# from Discord_chatbot.Data_Control_Files.Steam_API import *
+# from Discord_chatbot.Data_Control_Files.Twitch_API import *
+from Crypto.Cipher import AES
+from Crypto.Hash import SHA256
+
+"""This is Stitch Bots Main source code. Stitch Bot is an interactive discord bot that gives information about streamers 
+and games that you want to know about, it also stores users preferences and keeps you updated on the latest games and 
+streamers that you want to track"""
+
+"""
+comment structure:
+{Method Short Description}
+{Input Arguments and their types}
+{Output Details}
+{Exception Details}
+"""
 
 
+# Stitch Bot main class
 class stitchBot(commands.Bot):
 
     def __init__(self, prefix):
+        """
+        initialising methods, attributes and objects that are needed, these include:
+        - Object:
+            commands.Bot - part of the discord library used to create commands
+        - Functions:
+            command&event_set - starts all events and commands the bot has set
+        - attributes:
+            guild_dict - dictionary of all the servers(and channels in that server) the Bot is in
+            channel_list = list of all the text channels the Bot can send to
+        """
         commands.Bot.__init__(self, command_prefix=prefix)
-        self.client = discord.Client()
-        self.online = "[StitchBot] Online!"
+        self.discord = discord.Client()
         self.command_set()
         self.event_set()
         self.guild_dict = {}
         self.channel_list = []
-        self.last_message = ''
-        self.embed = discord.Embed()
 
+    # METHODS THAT ARE NOT COMMANDS OR EVENTS:
+
+    # - on_ready function - part of discord.py function starts when bot is ready
     async def on_ready(self):
         self.channels_to_list()
         for guild in self.guilds:
@@ -27,9 +54,12 @@ class stitchBot(commands.Bot):
             final_gif_path = os.path.join(path, gif_path)
             file = discord.File(final_gif_path)
 
+            # sends online text and a gif to the servers first text channel
+
             await guild.text_channels[0].send('✅**Online!**')
             await guild.text_channels[0].send(file=file)
 
+    # - adds servers and channels to the guild_dict and adds channels to the channel list
     def channels_to_list(self):
         print('started')
         for guild in self.guilds:
@@ -38,9 +68,16 @@ class stitchBot(commands.Bot):
                 print(self.channel_list)
             self.guild_dict[guild] = self.channel_list
 
-        print(self.channel_list, self.guild_dict)
-
+    '''
+    - sets all events for discord bots
+    Events Include:
+        - on_member_join
+        - on_member_remove
+        - on_command_error
+    '''
     def event_set(self):
+
+        # - EVENTS (@self.event decorator used to show discord.py that these methods are events)
 
         @self.event
         async def on_member_join(member):
@@ -50,40 +87,74 @@ class stitchBot(commands.Bot):
         async def on_member_remove(member):
             print(f'**{member} has left the server.**')
 
+        # - Error handling:
+            # - if a command is spelt wrong or does not exist it will send invalid command
         @self.event
         async def on_command_error(ctx, error):
             if isinstance(error, commands.errors.CommandNotFound or Exception):
                 await ctx.send('**Invalid command used**')
+            else:
+                await ctx.send(f'**Error occured:**\n```{error}```')
 
+    '''
+    - Sets all commands for discord Bot
+    These Include:
+        - !hello
+        - !clear
+        - !kick
+        - !ban
+        - unban
+        - !stream
+        - !game
+        - !stats
+        - !command
+    '''
     def command_set(self):
+
+        # - COMMANDS
 
         @self.command()
         async def hello(ctx):
             await ctx.channel.send('**Hello** :yum:')
 
+        '''
+        clears conversation by x amount of lines 
+        parameters:
+            ctx - context object that discord.py passes in when command is invoked
+            amount - the amount of lines that you want to be cleared
+        '''
         @self.command()
         async def clear(ctx, amount=5):
             await ctx.channel.purge(limit=amount)
 
+        '''
+        kicks user specified from the discord server that the command was invoked in
+         parameters:
+            ctx - line 121
+            member - type:(abc.Snowflake)The member to kick from their server.
+            reason - reason for user to be kicked, always set to None 
+        Note: Two decorators to make sure correct permissions are required
+        '''
         @self.command()
-        async def kick(ctx, target: discord.member):
-            if target.server_permissions.administrator:
-                await ctx.say("**Target is an admin**")
-
-            else:
-                try:
-                    await ctx.kick(target)
-                    await ctx.say(f'**Kicked:{target}**')
-                except Exception as e:
-                    await ctx.say(f'''**Something went wrong:**
-```{e}```''')
-
+        @has_permissions(kick_members=True)
+        async def kick(ctx, member: discord.Member, *, reason=None):
+            await member.kick(reason=reason)
+            await ctx.send(f'**User {member} has been kicked**')
+        '''
+        Same as Kick command but for Banning(see line 128)
+        '''
         @self.command()
-        async def ban(ctx, member: discord.member, *, reason=None):
+        @has_permissions(ban_members=True)
+        async def ban(ctx, member: discord.Member, *, reason=None):
             await member.ban(reason=reason)
-
+            await ctx.send(f'**User {member} has been banned**')
+        '''
+        Unbans User specified from server that command was invoked
+        parameters:
+            see kick command 
+        '''
         @self.command()
-        async def unban(ctx, *, member):
+        async def unban(ctx, *, member: discord.Member):
             banned_user = await ctx.guild.bans()
             member_name, member_discriminator = member.split('#')
 
@@ -138,7 +209,7 @@ class stitchBot(commands.Bot):
 + Started at: {details['started_at']}
 + Language: {details['language']}
 + Top Clip of stream:
-```
+``` 
 {vod}
 ''')
 
@@ -269,6 +340,48 @@ class stitchBot(commands.Bot):
 ```''')
 
 
+class encryptionAES128:
+
+    def __init__(self, key):
+        self.connected = False
+        self.BLOCK_SIZE = 16
+        self.KEY = self.hash(key)
+        self.CIPHER = AES.new(self.KEY, AES.MODE_ECB)
+        self.password = ''
+
+    def encrypt(self, data):
+        encrypted = self.CIPHER.encrypt(bytes(self.pad(data)))
+        return encrypted
+
+    def decrypt(self, data):
+        decrypted = self.CIPHER.decrypt(data)
+        msg = self.depad(decrypted.decode())
+        return msg
+
+    def pad(self, data):
+        if (len(data) % self.BLOCK_SIZE) != 0:
+            data = data + (self.BLOCK_SIZE - (len(data) % self.BLOCK_SIZE)) * '~'
+            return data.encode()
+        else:
+            return data
+
+    @staticmethod
+    def depad(data):
+        padsize = data.count('~')
+        raw_data = data[:len(data) - padsize]
+        return raw_data
+
+    def hash(self, data):
+        hashing = SHA256.new(bytes(data.encode()))
+        return hashing.digest()
+
+
 if __name__ == '__main__':
+    # x = encryption.encrypt('Nzc1Mzg0NTE2NzUxMTMwNjI0.X6ljGg.QLQfSL9RKk9t31tNooMQWXyMbe4')
+    # print(x)
+    encrypted_token = b'\xd0\xa0\x85i"\xa2a\x0e\x9b\xad\x18\xbe\x86\xce\xfeA\x85l\xa9\xf4T<\xdeF\xf0 \xdd\xc6\x13c_E\xcd\x9dn5\xa72r\xa2x\xe8-\xcb\'\xd2Z\xa9\xc3\xae\xf3w\xa7\x1f\x08\xe0\xc7\xc2\x0e\xcc\xfd<G\xf2'
+    decrypt_key = input('Enter Decrypt Key:')
+    encryption = encryptionAES128(f'{decrypt_key}')
+    token = encryption.decrypt(encrypted_token)
     bot = stitchBot(prefix='!')
-    bot.run('Nzc1Mzg0NTE2NzUxMTMwNjI0.X6ljGg.ELQ4-GXyq3UlCqYVYfwxv1Qh2ho')
+    bot.run(f'{token}')
