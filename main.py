@@ -3,8 +3,8 @@ import discord
 import sys, os
 from discord.ext import commands
 from discord.ext.commands import has_permissions
-# from Discord_chatbot.Data_Control_Files.Steam_API import *
-# from Discord_chatbot.Data_Control_Files.Twitch_API import *
+from Discord_chatbot.Data_Control_Files.Steam_API import *
+from Discord_chatbot.Data_Control_Files.Twitch_API import *
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 
