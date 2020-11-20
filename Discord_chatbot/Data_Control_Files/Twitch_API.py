@@ -8,7 +8,7 @@ steamHandler.gamePlayerCount(730)
 
 # Imports required modules
 import urllib.request, json, os
-from Local_Store import storageHandler
+from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
 
 class twitch_APIM:
     """

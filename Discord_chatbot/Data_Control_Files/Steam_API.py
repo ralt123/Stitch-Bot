@@ -7,7 +7,7 @@ steamHandler.gamePlayerCount(730)
 """
 
 import urllib.request, json, os
-from Local_Store import storageHandler
+from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
 
 class steam_APIM:
     """
