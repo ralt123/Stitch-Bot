@@ -256,5 +256,20 @@ class twitch_APIM:
             return streamingFavourites
         return False
 
+    def getStreamerName(self, streamerID):
+        """
+        Retrieves the name of a streamer given their ID.
+        Should only be used when the ID is known to be valid.
+
+        :param streamerID: int - ID of streamer
+        :return: str - Name of streamer
+        """
+        # Retrieves data regarding the streaming
+        streamerData = self.retrieveData(f"https://api.twitch.tv/helix/users?id={streamerID}")
+        # Extracts the name of the streamer
+        streamerName = streamerData["data"][0]["login"]
+        return streamerName
+
 # Creates object
 twitchHandler = twitch_APIM()
+
