@@ -9,6 +9,7 @@ steamHandler.gamePlayerCount(730)
 # Imports required modules
 import urllib.request, json, os
 from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
+from Encryption import encryptionAES128
 
 class twitch_APIM:
     """
@@ -21,9 +22,33 @@ class twitch_APIM:
         self.__clientID = ""
         self.__auth = ""
         self.__setKeys()
-
     # Sets the crucial API keys
+
     def __setKeys(self):
+        filePath = os.path.dirname(__file__)
+
+        # setting decrypt key
+        decrypt_key_path = os.path.join(filePath, "Encrypted_keys\Decrypt_key")
+        with open(decrypt_key_path, 'r') as decrypt_key_file:
+            decrypt_key = decrypt_key_file.read()
+        encryption = encryptionAES128(decrypt_key)
+
+        # Setting Auth key
+
+        auth_key_path = os.path.join(filePath, "Encrypted_keys\Twitch_Authentication_key.txt")
+        with open(auth_key_path, 'rb') as auth_key_file:
+            encrypted_auth_key = auth_key_file.read()
+        self.__auth = encryption.decrypt(encrypted_auth_key)
+
+        # setting ClientID key
+
+        client_key_path = os.path.join(filePath,"Encrypted_keys\Twitch_ClientID_key.txt")
+        with open(client_key_path, 'rb') as client_key_file:
+            encrypted_client_key = client_key_file.read()
+        self.__clientID = encryption.decrypt(encrypted_client_key)
+
+        # old open code before encryption update:
+        """
         filePath = os.path.dirname(__file__)
         keyFile = os.path.join(filePath, 'Keys_DO_NOT_UPLOAD.txt')
         # Retrieves keys from the text file. Text file is used to simplicity and ease of editing for my peers.
@@ -40,7 +65,7 @@ class twitch_APIM:
                 self.__auth = keyDataValue[1]
         if self.__auth == "" or self.__clientID == "":
             raise ValueError('Missing API key/s - Please check the Keys text file.')
-
+        """
     def retrieveData(self, url):
         """
         Used to retrieve data from the given url
@@ -165,19 +190,19 @@ class twitch_APIM:
         # ended_at argument
         time = datetime.today().isoformat()
         manip3 = time.split(':')
-        print(manip3[2])
         manip4 = "{:.0f}".format(float(manip3[2]))
         if float(manip4) < 10:
             manip4 = f'0{manip4}'
-        print(manip4)
         manip4 = manip4.replace('.', ':')
         final_end = f'{manip3[0]}:{manip3[1]}:{manip4}Z'
-        print(final_end)
 
         clipsDict = self.retrieveData(f"https://api.twitch.tv/helix/clips?broadcaster_id={streamerID}&first=1&started_at={final_start}&ended_at={final_end}")
-        clip = clipsDict['data'][0]
-        clip = clip['url']
-        return clip
+        if not clipsDict["data"]:
+            return False
+        else:
+            clip = clipsDict['data'][0]
+            clip = clip['url']
+            return clip
 
     def getGameID(self, gameName):
         """

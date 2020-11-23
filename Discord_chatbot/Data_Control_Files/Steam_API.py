@@ -8,6 +8,8 @@ steamHandler.gamePlayerCount(730)
 
 import urllib.request, json, os
 from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
+from Encryption import encryptionAES128
+
 
 class steam_APIM:
     """
@@ -24,19 +26,35 @@ class steam_APIM:
     # Sets the crucial API keys
     def __setKeys(self):
         filePath = os.path.dirname(__file__)
+
+        # setting decrypt key
+        decrypt_key_path = os.path.join(filePath, "Encrypted_keys\Decrypt_key")
+        with open(decrypt_key_path, 'r') as decrypt_key_file:
+            decrypt_key = decrypt_key_file.read()
+        encryption = encryptionAES128(decrypt_key)
+
+        steam_key_path = os.path.join(filePath, "Encrypted_keys\Steam_key.txt")
+        with open(steam_key_path, 'rb') as steam_key_file:
+            encrypted_steam_key = steam_key_file.read()
+        self.__auth = encryption.decrypt(encrypted_steam_key)
+
+        # old key import code:
+        '''
+        filePath = os.path.dirname(__file__)
         keyFile = os.path.join(filePath, 'Keys_DO_NOT_UPLOAD.txt')
         # Retrieves keys from the text file. Text file is used to simplicity and ease of editing for my peers.
         with open(keyFile, 'r') as keyFile:
             keyData = keyFile.read()
         keyData = keyData.replace(" ", "")
         keyDataList = keyData.split("\n")
+        # decrypting keys:
         for i in range(0, len(keyDataList)):
             keyDataValue = keyDataList[i].split("=")
             if keyDataValue[0] == "Steamkey":
                 self.__apiKey = keyDataValue[1]
         if self.__apiKey == "":
             raise ValueError('Missing API key/s - Please check the Keys text file.')
-
+        '''
     # Sets the absolute path for the game list
     def setGameListPath(self):
         filePath = os.path.dirname(__file__)
