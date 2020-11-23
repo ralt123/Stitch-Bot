@@ -1,3 +1,0 @@
-Twitch ClientID key = keyHere
-Twitch Authentication key = keyHere
-Steam key = keyHere
