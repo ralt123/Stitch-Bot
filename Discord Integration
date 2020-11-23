@@ -1,8 +1,0 @@
-import discord
-
-TOKEN = 'Secret'
-
-client = discord.Client()
-
-
-client.run(TOKEN)

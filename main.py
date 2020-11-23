@@ -6,7 +6,7 @@ from discord.ext.commands import has_permissions
 from Discord_chatbot.Data_Control_Files.Steam_API import *
 from Discord_chatbot.Data_Control_Files.Twitch_API import *
 from Encryption import encryptionAES128
-from Chatbot import output
+from Bot_response import output
 
 """This is Stitch Bots Main source code. Stitch Bot is an interactive discord bot that gives information about streamers 
 and games that you want to know about, it also stores users preferences and keeps you updated on the latest games and 

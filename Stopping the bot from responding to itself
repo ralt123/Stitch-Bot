@@ -1,3 +1,0 @@
-#code that allows the bot to respond to user
-if message.author.id == otherBotID:
-  #this should check if a message's author is not a user and if it's not it should do stuff
