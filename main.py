@@ -2,7 +2,8 @@
 import discord
 import sys
 from discord.ext import commands
-from discord.ext.commands import has_permissions
+from discord.ext.commands import has_permissions, check
+from discord import Embed
 from Discord_chatbot.Data_Control_Files.Steam_API import *
 from Discord_chatbot.Data_Control_Files.Twitch_API import *
 from Encryption import encryptionAES128
@@ -36,28 +37,27 @@ class stitchBot(commands.Bot):
             channel_list = list of all the text channels the Bot can send to
         """
         commands.Bot.__init__(self, command_prefix=prefix)
-        self.discord = discord.Client()
         self.command_set()
         self.event_set()
         self.guild_dict = {}
         self.channel_list = []
-
+        self.embed = Embed
+        self.colour = discord.Color(0x000000)
     # METHODS THAT ARE NOT COMMANDS OR EVENTS:
 
     # - on_ready function - part of discord.py function starts when bot is ready
     async def on_ready(self):
         self.channels_to_list()
         for guild in self.guilds:
-            # gif
-            path = os.path.dirname(__file__)
-            gif_path = "../Discord-Bot/images/Stitch.gif"
-            final_gif_path = os.path.join(path, gif_path)
-            file = discord.File(final_gif_path)
+            embed = discord.Embed(
+                title=f'✅**Online!**',
+                description='Stitch Bot is online',
+                colour=self.colour)
+            embed.set_image(url='https://media.giphy.com/media/AsMOCCJf9b9dVsRh63/giphy.gif')
 
             # sends online text and a gif to the servers first text channel
 
-            await guild.text_channels[0].send('✅**Online!**')
-            await guild.text_channels[0].send(file=file)
+            await guild.text_channels[0].send(embed=embed)
 
     # - adds servers and channels to the guild_dict and adds channels to the channel list
     def channels_to_list(self):
@@ -67,6 +67,10 @@ class stitchBot(commands.Bot):
                 self.channel_list.append(channel)
                 print(self.channel_list)
             self.guild_dict[guild] = self.channel_list
+
+    def correct_channel(self, ctx):
+        if not ctx.channel.name == 'questions':
+            return True
 
     '''
     - sets all events for discord bots
@@ -90,12 +94,7 @@ class stitchBot(commands.Bot):
         # - Error handling:
             # - if a command is spelt wrong or does not exist it will send invalid command
 
-        @self.event
-        async def on_command_error(ctx, error):
-            if isinstance(error, commands.errors.CommandNotFound or Exception):
-                await ctx.send('**Invalid command used**')
-            else:
-                await ctx.send(f'**Error occured:**\n```{error}```')
+
 
         @self.event
         async def on_message(message):
@@ -119,10 +118,10 @@ class stitchBot(commands.Bot):
         - !command
     '''
     def command_set(self):
-
-        # - COMMANDS
+        # - COMMANDS (@self.command decorator)
 
         @self.command()
+        @check(self.correct_channel)
         async def hello(ctx):
             await ctx.channel.send('**Hello** :yum:')
 
@@ -133,6 +132,7 @@ class stitchBot(commands.Bot):
             amount - the amount of lines that you want to be cleared
         '''
         @self.command()
+        @check(self.correct_channel)
         async def clear(ctx, amount=5):
             await ctx.channel.purge(limit=amount)
 
@@ -145,6 +145,7 @@ class stitchBot(commands.Bot):
         Note: Two decorators to make sure correct permissions are required
         '''
         @self.command()
+        @check(self.correct_channel)
         @has_permissions(kick_members=True)
         async def kick(ctx, member: discord.Member, *, reason=None):
             await member.kick(reason=reason)
@@ -153,6 +154,7 @@ class stitchBot(commands.Bot):
         Same as Kick command but for Banning(see line 128)
         '''
         @self.command()
+        @check(self.correct_channel)
         @has_permissions(ban_members=True)
         async def ban(ctx, member: discord.Member, *, reason=None):
             await member.ban(reason=reason)
@@ -163,6 +165,7 @@ class stitchBot(commands.Bot):
             see kick command 
         '''
         @self.command()
+        @check(self.correct_channel)
         async def unban(ctx, *, member: discord.Member):
             banned_user = await ctx.guild.bans()
             member_name, member_discriminator = member.split('#')
@@ -176,6 +179,7 @@ class stitchBot(commands.Bot):
                     return
 
         @self.command()
+        @check(self.correct_channel)
         async def stream(ctx):
             await ctx.send('**Enter Streamers name**')
 
@@ -213,22 +217,26 @@ class stitchBot(commands.Bot):
                         return ''
                 live = live_emoji()
 
-                await ctx.channel.send(f'''
-**{live+details['user_name']}** 
-```diff
-- {details['type']}
-+ Title: {details['title']}
-+ Viewers: {details['viewer_count']}
-+ Started at: {details['started_at']}
-+ Language: {details['language']}
-{clip}
-``` 
-{vod}
-''')
+                title = f"**{live+details['user_name']}**"
+                desc = f'''- {details['type']}
+                - Title: {details['title']}
+                - Viewers: {details['viewer_count']}
+                - Started at: {details['started_at']}
+                - Language: {details['language']}
+                {clip}'''
 
+                embed = discord.Embed(
+                    title=f'{title}',
+                    description=f'{desc}',
+                    colour=self.colour, )
 
+                await ctx.send(embed=embed)
+
+                if not vod == '':
+                    await ctx.send(vod)
 
         @self.command()
+        @check(self.correct_channel)
         async def game(ctx):
             await ctx.send('**Enter game name**')
 
@@ -237,108 +245,131 @@ class stitchBot(commands.Bot):
 
             game_name = await bot.wait_for('message', check=check)
 
-            try:
-                print('searching')
-                game_id = steamHandler.findGameID(game_name.content)
-                if not game_id:
-                    raise Exception('Game not found')
+            print('searching')
+            game_id = steamHandler.findGameID(game_name.content)
+            if not game_id:
+                raise Exception('Game not found')
 
-                def game_price_calc(id):
-                    price_dict = steamHandler.getGamePrice(id)
-                    if price_dict['free']:
-                         normal_price = 0
-                         current_price = 0
-                         money_saved = 0
-                         sale = False
-                    elif price_dict['normal_price'] == '':
-                        normal_price = 0
-                        current_price = price_dict['current_price']
-                        money_saved = 0
-                        sale = False
-                    else:
-                        current_price = price_dict['current_price']
-                        normal_price = price_dict['normal_price']
-                        sale = True
-                        x = float(price_dict['normal_price'][1:])
-                        y = float(price_dict['current_price'][1:])
-                        z = price_dict['current_price'][:1]
-                        money_saved = f'{z}{x-y}'
-                    return normal_price, current_price, money_saved, sale
-
-                normal_price, current_price, money_saved, sale = game_price_calc(game_id)
-
-                if normal_price == 0 and current_price == 0 and money_saved == 0:
-                    game_cost = 'Free'
-                elif sale:
-                    game_cost = f'Sale Price: {current_price}\n{money_saved} Off!'
+            def game_price_calc(id):
+                price_dict = steamHandler.getGamePrice(id)
+                if price_dict['free']:
+                     normal_price = 0
+                     current_price = 0
+                     money_saved = 0
+                     sale = False
+                elif price_dict['normal_price'] == '':
+                    normal_price = 0
+                    current_price = price_dict['current_price']
+                    money_saved = 0
+                    sale = False
                 else:
-                    game_cost = f'Price: {current_price}'
-                player_count = steamHandler.gamePlayerCount(game_id)
-                game_desc = steamHandler.gameDescription(game_id)
-                game_trailer = steamHandler.getGameTrailers(game_id)
-                await ctx.channel.send(f'''** - {game_name.content}**
-```diff
-+ {game_cost}
-+ Player Count: {player_count}
-+ Game Description:\n {game_desc}
-+ Trailer:
-```
-{game_trailer}''')
+                    current_price = price_dict['current_price']
+                    normal_price = price_dict['normal_price']
+                    sale = True
+                    x = float(price_dict['normal_price'][1:])
+                    y = float(price_dict['current_price'][1:])
+                    z = price_dict['current_price'][:1]
+                    money_saved = f'{z}{x-y}'
+                return normal_price, current_price, money_saved, sale
 
-            except Exception as i:
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                print(exc_type, fname, exc_tb.tb_lineno)
-                print('Error Occurred:', i)
-                await ctx.channel.send(f'**{i}**')
+            normal_price, current_price, money_saved, sale = game_price_calc(game_id)
+
+            if normal_price == 0 and current_price == 0 and money_saved == 0:
+                game_cost = 'Free'
+            elif sale:
+                game_cost = f'Sale Price: {current_price}\n{money_saved} Off!'
+            else:
+                game_cost = f'Price: {current_price}'
+            player_count = steamHandler.gamePlayerCount(game_id)
+            game_desc = steamHandler.gameDescription(game_id)
+            game_trailer = steamHandler.getGameTrailers(game_id)
+            title = f'** - {game_name.content}**'
+            desc = (f'''- {game_cost}
+                    - Player Count: {player_count}
+                    - Game Description:\n {game_desc}
+                    - Trailer:''')
+
+            embed = discord.Embed(
+                title=f'{title}',
+                description=f'{desc}',
+                colour=self.colour, )
+
+            await ctx.send(embed=embed)
+            await ctx.send(game_trailer)
 
         @self.command()
+        @check(self.correct_channel)
         async def stats(ctx):
             await ctx.channel.send('**Enter Steam URL**')
-            try:
-                def check(msg):
-                    return msg.author == ctx.author and msg.channel == ctx.channel
-                steam_url = await bot.wait_for('message', check=check)
-                steam_id = steamHandler.getUserSteamID(steam_url.content)
-                csgo_stats = steamHandler.getCSGOStats(steam_id)
-                if not csgo_stats:
-                    await ctx.channel.send('**Couldn`t find stats**')
+
+            def check(msg):
+                return msg.author == ctx.author and msg.channel == ctx.channel
+            steam_url = await bot.wait_for('message', check=check)
+            print(steam_url.content)
+            steam_id = steamHandler.getUserSteamID(steam_url.content)
+            csgo_stats = steamHandler.getCSGOStats(steam_id)
+            if not csgo_stats:
+                desc = '**Couldn`t find stats**'
+            else:
+                if type(csgo_stats['total_time_played']) == bool:
+                    hours = 'unknown'
                 else:
-                    await ctx.channel.send(f''':first_place:** - CSGO Stats**
-```diff
-+ Total Kills: {csgo_stats['total_kills']}
-+ Total Headshots: {csgo_stats['total_kills_headshot']}
-+ Total Damage: {csgo_stats['total_damage_done']}
-+ Total Deaths: {csgo_stats['total_deaths']}
-+ Total Wins: {csgo_stats['total_wins']}
-+ Total PlayTime in Match {int(csgo_stats['total_time_played'])//3600}hrs 
-```''')
+                    hours = int(csgo_stats['total_time_played'])//3600
+                desc = (f'''+ Total Kills: {csgo_stats['total_kills']}
+                - Total Headshots: {csgo_stats['total_kills_headshot']}
+                - Total Damage: {csgo_stats['total_damage_done']}
+                - Total Deaths: {csgo_stats['total_deaths']}
+                - Total Wins: {csgo_stats['total_wins']}
+                - Total PlayTime in Match {hours}hrs 
+                ''')
 
-            except Exception as e:
-                await ctx.channel.send(f'**Error Fetching Stats,**\n```{e}```')
+            title = ':first_place:** - CSGO Stats**'
+
+            embed = self.embed(
+                title=f'{title}',
+                description=f'{desc}',
+                colour=self.colour, )
+
+            await ctx.send(embed=embed)
 
         @self.command()
+        @check(self.correct_channel)
         async def commands(ctx):
-            await ctx.send("""
-**- Commands:**
-```diff
-- !info
-- !hello 
-- !clear
-- !kick
-- !ban
-- !unban
-- !game
-- !commands
-```""")
+            title = '- Commands:'
+            desc = """
+            - !hello
+            - !clear
+            - !kick
+            - !ban
+            - unban
+            - !stream
+            - !game
+            - !stats
+            - !command
+            """
+            embed = self.embed(
+                title=f'{title}',
+                description=f'{desc}',
+                colour=self.colour, )
+
+            await ctx.send(embed=embed)
 
         @self.command()
+        @check(self.correct_channel)
         async def info(ctx):
-            await ctx.send('''
-:information_source:**Info**
-```diff
-+ This is Stitch Bot ,It is an interactive Discord Bot that helps Gamers gain information about the games they love and the Streamers they watch. It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. 
-```''')
+            title = ':information_source:**Info**'
+            desc = '''This is Stitch Bot ,It is an interactive Discord Bot that helps Gamers gain information about 
+            the games they love and the Streamers they watch. It can help you find the most popular game to play and 
+            tell you when your favourite streamer is Streaming. It can also help with your usual basic commands like 
+            Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. '''
+
+            embed = discord.Embed(
+                title=f'{title}',
+                description=f'{desc}',
+                colour=self.colour)
+            embed.set_image(url='https://i.ibb.co/zRDVL3B/Stitch-Bot-logo.jpg')
+
+            await ctx.send(embed=embed)
 
 
 if __name__ == '__main__':
@@ -350,7 +381,7 @@ if __name__ == '__main__':
         decrypt_key = decrypt_key_file.read()
     encryption = encryptionAES128(decrypt_key)
 
-    # Acquiring encrypted key from text file
+    # Acquiring encrypted discord token from text file
 
     discord_key_path = os.path.join(filePath, "Discord_chatbot\Data_Control_Files\Encrypted_keys\Discord_key.txt")
     with open(discord_key_path, 'rb') as key_file:
