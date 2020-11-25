@@ -18,8 +18,8 @@ class local_StorageM:
         self.userDetailsPath = "UserDetails.csv"
         self.trackedGameData = "TrackedGameData.csv"
         self.trackedStreamData = "TrackedStreamData.csv"
-        self.detailsStored = ["ID", "steam_id", "favourite_streamers", "favourite_games", "favourite_genres", "tracked_game", "tracked_stream", "blacklisted_streamers"]
-        self.listDetails = ["favourite_streamers", "favourite_games", "favourite_genres", "blacklisted_streamers", "tracked_game", "tracked_streamer"]
+        self.detailsStored = ["ID", "steam_id", "favourite_streamers", "favourite_games", "favourite_genre", "tracked_game", "tracked_streamer", "blacklisted_streamers"]
+        self.listDetails = ["favourite_streamers", "favourite_games", "blacklisted_streamers", "tracked_game", "tracked_streamer"]
         self.diDetailsStored = ["tracked_game", "tracked_streamer"]
         self.setCSVPath()
 
@@ -47,7 +47,7 @@ class local_StorageM:
             if len(userData) > requiredDataIndex:
                 if userData[requiredDataIndex]:
                     trackedList.append([userData[0], userData[requiredDataIndex]])
-
+        # Formats all games as a sublist
         for i in range(len(trackedList)):
             trackedList[i][1] = trackedList[i][1].split(",")
         return trackedList
@@ -62,13 +62,16 @@ class local_StorageM:
         with open(self.userDetailsPath, "r") as csvFile:
             heldRows = list(csv.reader(csvFile))
         # Sets the index corresponding to the index of the required data
-        requiredDataIndex = self.detailsStored.index("tracked_stream")
+        requiredDataIndex = self.detailsStored.index("tracked_streamer")
         trackedList = []
         # Produces the list to be returned
         for userData in heldRows:
             if len(userData) > requiredDataIndex:
                 if userData[requiredDataIndex]:
                     trackedList.append([userData[0], userData[requiredDataIndex]])
+        # Formats all streamers as a sublist
+        for i in range(len(trackedList)):
+            trackedList[i][1] = trackedList[i][1].split(",")
         return trackedList
 
     def readUserDetails(self, userID):
@@ -127,7 +130,6 @@ class local_StorageM:
             dictDetails[self.detailsStored[i]] = userDetails[i]
         return dictDetails
 
-    # Do not access directly, I will write functions as to correctly format the parameter before passing
     def writeUserDetails(self, *userDetails):
         """
         Used to write a users details to a locally stored csv file
@@ -201,13 +203,18 @@ class local_StorageM:
                             for value in multipleValue:
                                 multipleValueString += value + ","
                             storeData[self.detailsStored.index(userDetails[i])] = multipleValueString + str(userDetails[i + 1])
-                        # Limits the attributes list to 20 values
+                        # Limits the attributes list to 10 values
                         elif len(multipleValue) >= 10 or (userDetails[i] in self.diDetailsStored and len(multipleValue) == 2):
                             multipleValue = ''.join(multipleValue[1:])
                             storeData[self.detailsStored.index(userDetails[i])] = multipleValue + "," + str(userDetails[i + 1])
                         # Add new value to the end of the list
                         else:
-                            storeData[self.detailsStored.index(userDetails[i])] += "," + str(userDetails[i + 1])
+                            # There is already data held in the multiple valued attribute
+                            if storeData[self.detailsStored.index(userDetails[i])]:
+                                storeData[self.detailsStored.index(userDetails[i])] += "," + str(userDetails[i + 1])
+                            # The multiple valued attribute held no data
+                            else:
+                                storeData[self.detailsStored.index(userDetails[i])] += str(userDetails[i + 1])
                     # Replace the data held for the specific attribute
                     else:
                         storeData[self.detailsStored.index(userDetails[i])] = userDetails[i + 1]
@@ -463,14 +470,14 @@ class local_StorageM:
             # List containing records view/player count on a given date
             previousDataCounts = storeData[2].split(",")
             # Variable containing last stored date
-            recordedDate = self._unixToUTC(int(previousDates[-1:]))[:3]
+            recordedDate = self._unixToUTC(int(previousDates[-1:][0]))[:3]
             # Checks if data for the current date was already stored
             if recordedDate == currentDate:
                 # Adjusts previously stored data
-                previousAverage = int(previousDataCounts[-1:])
+                previousAverage = int(previousDataCounts[-1:][0])
                 timesRecorded = int(storeData[3])
                 newAverage = (previousAverage * timesRecorded + dataCount) / (timesRecorded + 1)
-                previousDataCounts[-1:] = int(newAverage)
+                previousDataCounts[len(previousDataCounts)-1] = int(newAverage)
                 storeData[3] = timesRecorded + 1
             # Current date was not stored
             else:
@@ -572,6 +579,8 @@ class local_StorageM:
                     lowerIndex = currentRowIndex + 1
         # If there was no data held in the csv
         else:
+            return False
+        if not heldData:
             return False
 
         # Converts multiple value strings within the list into a list

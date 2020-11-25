@@ -55,6 +55,7 @@ class steam_APIM:
         if self.__apiKey == "":
             raise ValueError('Missing API key/s - Please check the Keys text file.')
         '''
+
     # Sets the absolute path for the game list
     def setGameListPath(self):
         filePath = os.path.dirname(__file__)
@@ -72,8 +73,9 @@ class steam_APIM:
         try:
             with urllib.request.urlopen(url) as openPage:
                 data = json.loads(openPage.read().decode())
-        except urllib.error.HTTPError:
-            return False
+        except urllib.error.HTTPError as errorMessage:
+            raise ValueError(
+                f"HTTPError Possible causes - Possible API outage, invalid URL or incorrect API key/s\n{errorMessage}")
         return data
 
     # Merge sort method was made myself so it's efficiency may not be optimal but it shall suffice
@@ -133,7 +135,7 @@ class steam_APIM:
                     while rightPointer != rightMax:
                         sortedList.append(unsortedGL[i + 1][rightPointer])
                         rightPointer += 1
-                unsortedGL[i:i+2] = [sortedList]
+                unsortedGL[i:i + 2] = [sortedList]
         # Returns the sorted list
         return unsortedGL[0]
 
@@ -209,6 +211,48 @@ class steam_APIM:
                     highestIndex = i
         return gameIDs[highestIndex]
 
+    # Not official steam API
+    def top10Games(self, userID=False):
+        """
+        Uses a non-official steam API to retrieve the top 10 games in the past 2 weeks.
+        Optionally, by providing a user ID these games will be of the user's favourite genre.
+
+        :param userID: int - discord ID of user (optional)
+        :return: list - A list containing True/False at the 0th index, True means that the list of game's returned are
+        of the user's favourite genre. The 1st index contains a sublist of the top games in the past 2 weeks.
+        """
+        # userID was provided and so their favourite genre is utilized
+        if userID:
+            # Retrieves the user's favourite genre
+            userDetails = storageHandler.readUserDetails(userID)
+            # User was found within storage and posses a favourite genre
+            if userDetails:
+                # Formatting required for the API
+                favouriteGenre = userDetails[4].replace(" ", "+")
+                url = "https://steamspy.com/api.php?request=tag&tag=" + favouriteGenre
+        # userID not passed or the user's favourite genre could not be found
+        if not userID:
+            url = "https://steamspy.com/api.php?request=top100in2weeks"
+        # This API suffers outages thus a try statement is used to prevent an outage from ending the program
+        try:
+            # Retrieves the data regarding the top games
+            topGamesData = self.retrieveData(url)
+        except json.decoder.JSONDecodeError:
+            return False
+        topGames = []
+        retrievedGames = 0
+        # Extracts necessary data
+        for dictKey in topGamesData.keys():
+            topGames.append(topGamesData[dictKey]["name"])
+            retrievedGames += 1
+            if retrievedGames == 10:
+                break
+        # Returns the data, with the boolean at the 0th index indicating whether the user's favourite genre was utilized
+        if userID:
+            return [True, topGames]
+        else:
+            return [False, topGames]
+
     def gamePlayerCount(self, gameID):
         """
         Returns the current player count of a game given its steam gameID
@@ -237,7 +281,6 @@ class steam_APIM:
         url = "https://store.steampowered.com/api/appdetails?l=en&appids=" + str(gameID)
         # Opens the webpage for data retrieval, page is closed once the data is retrieved
         data = self.retrieveData(url)
-        print(url)
         # Returns short description
         return data[str(gameID)]["data"]["short_description"]
 
@@ -279,6 +322,7 @@ class steam_APIM:
         # Defines the web page that contains the required data
         url = "http://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=730&key=" + \
               str(self.__apiKey) + "&steamid=" + str(userSteamID)
+
         # Retrieves data
         data = self.retrieveData(url)
         if not data:
@@ -305,7 +349,8 @@ class steam_APIM:
         # Generates the dictionary to be returned
         if "price_overview" in data[str(gameID)]["data"]:
             priceDict = {"normal_price": data[str(gameID)]["data"]["price_overview"]["initial_formatted"],
-                         "current_price": data[str(gameID)]["data"]["price_overview"]["final_formatted"], "free": False}
+                         "current_price": data[str(gameID)]["data"]["price_overview"]["final_formatted"],
+                         "free": False}
             # Checks if the game is on deal
             if priceDict["normal_price"]:
                 priceDict["on_deal"] = "True"
@@ -329,7 +374,7 @@ class steam_APIM:
         url = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?steamids={str(userID)}&key={self.__apiKey}"
         userInfo = self.retrieveData(url)
         # Returns False if the given ID was invalid
-        if len(userInfo) == 0:
+        if len(userInfo["response"]["players"]) == 0:
             return False
         else:
             # Extracts user info
@@ -469,12 +514,12 @@ class steam_APIM:
             # URL must be modified to contain the ID of at most 100 friends of the user
             url += "," + allFriends[i]["steamid"]
             # API call has reached it's maximum length, perform the call and prepare another
-            if (i+1) % 100 == 0:
+            if (i + 1) % 100 == 0:
                 allFriendData = self.retrieveData(url + "&key=" + self.__apiKey)
                 friendsList.append(allFriendData["response"]["players"])
                 url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?steamids="
         # Performs the last data retrieval regarding the user's friends from the steam API
-        if not (i+1) % 100 == 0:
+        if not (i + 1) % 100 == 0:
             allFriendData = self.retrieveData(url + "&key=" + self.__apiKey)
             friendsList.append(allFriendData["response"]["players"])
         playingFriends = []
@@ -489,6 +534,10 @@ class steam_APIM:
             if elementMarker % 100 == 0:
                 elementMarker = 0
                 listMarker += 1
+        if not playingFriends:
+            return False
+        if len(playingFriends) == 1:
+            return playingFriends
         # Calls another method to sort the list then returns the sorted list
         return self._friendQuickSort(playingFriends)
 
@@ -523,7 +572,7 @@ class steam_APIM:
         daysInMonths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         dayFromLeap = unixTime / 86400
         # when the first leap day occurs from the epoch in days - calculation is left expanded to explain
-        firstLeap = (365*2) + 31 + 29
+        firstLeap = (365 * 2) + 31 + 29
         # when the leap day repeats in days - calculation is left expanded to explain
         repeatLeap = (365 * 4) + 1
         leapDays = 0
@@ -542,8 +591,8 @@ class steam_APIM:
         day = (unixTime / 86400) - leapDays
         # Run if year of date is leap year
         if daysInMonths[1] == 29:
-            year = 1970 + (day-1) / 365
-            day = (day-1) % 365
+            year = 1970 + (day - 1) / 365
+            day = (day - 1) % 365
             # Adds removed day
             day += 1
         else:
@@ -551,8 +600,8 @@ class steam_APIM:
             day = day % 365
         month = 1
         # Calculates the month and day
-        while day > daysInMonths[month-1]:
-            day -= daysInMonths[month-1]
+        while day > daysInMonths[month - 1]:
+            day -= daysInMonths[month - 1]
             month += 1
         # As epoch is from 1st of jan not 0 of jan, add a day
         day += 1
@@ -658,6 +707,9 @@ class steam_APIM:
             # Extracts the list of games favourited by the user
             playerCountList = []
             favouriteGames = favouriteGames[3]
+            # Return False if the user has no favourite games set
+            if favouriteGames == [""]:
+                return False
             # Creates list to be returned
             for game in favouriteGames:
                 gameID = self.findGameID(game)
@@ -668,6 +720,21 @@ class steam_APIM:
         # Returns False if an invalid user ID was given
         return False
 
+    def validateID(self, userID):
+        """
+        Validates a provided user's steamID
+
+        :param userID: int - steamID of user
+        :return: Boolean - Indicates the validity of the ID
+        """
+        # Retrieving required data regarding the user
+        url = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?steamids={str(userID)}&key={self.__apiKey}"
+        userInfo = self.retrieveData(url)
+        # Returns False if the given ID was invalid
+        if len(userInfo["response"]["players"]) == 0:
+            return False
+        else:
+            return True
 
 # Creates object
 steamHandler = steam_APIM()
