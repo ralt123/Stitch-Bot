@@ -74,6 +74,29 @@ class local_StorageM:
             trackedList[i][1] = trackedList[i][1].split(",")
         return trackedList
 
+    def checkIfChecked(self, objectID, objectType):
+        """
+        Comment later - return True if already checked today, false otherwise
+
+        :param objectID:
+        :param objectType:
+        :return:
+        """
+        currentTime = time.time() // 86400
+        if objectType == "steam":
+            objectDetails = self.retrieveTrackedData(objectID, objectType)
+            if objectDetails:
+                for recordedDay in objectDetails[1]:
+                    if recordedDay // 86400 == currentTime:
+                        return True
+        elif objectType == "twitch":
+            objectDetails = self.retrieveTrackedData(objectID, objectType)
+            if objectDetails:
+                for recordedDay in objectDetails[1]:
+                    if recordedDay // 86400 == currentTime:
+                        return True
+            return False
+
     def readUserDetails(self, userID):
         """
         Retrieve the stored details regarding a specific user given their ID
@@ -548,7 +571,7 @@ class local_StorageM:
         """
         # Determines the csv to be used
         if trackedType == "twitch":
-            storageFile = self.trackedGameData
+            storageFile = self.trackedStreamData
         elif trackedType == "steam":
             storageFile = self.trackedGameData
         else:
