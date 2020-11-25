@@ -66,6 +66,7 @@ class twitch_APIM:
         if self.__auth == "" or self.__clientID == "":
             raise ValueError('Missing API key/s - Please check the Keys text file.')
         """
+
     def retrieveData(self, url):
         """
         Used to retrieve data from the given url
@@ -79,8 +80,9 @@ class twitch_APIM:
         # Use of try/except to inform the programmer if their API keys are invalid to resolve common errors
         try:
             page = urllib.request.urlopen(request)
-        except urllib.error.HTTPError:
-            raise ValueError("Incorrect API key/s - Please check the Keys text file.")
+        except urllib.error.HTTPError as errorMessage:
+            raise ValueError(
+                f"HTTPError Likely causes - Possible API outage or incorrect API key/s\n{errorMessage}")
         # Retrieves the required data held in the page abd returns it
         pageData = json.loads(page.read().decode())
         return pageData
@@ -141,7 +143,8 @@ class twitch_APIM:
         Returns False if the streamer was not found or if the given streamer has no clips
         """
         # Retrieves the required data by using the twitch api
-        topClipsData = self.retrieveData("https://api.twitch.tv/helix/clips?first=5&broadcaster_id=" + str(streamerID))
+        topClipsData = self.retrieveData(
+            "https://api.twitch.tv/helix/clips?first=5&broadcaster_id=" + str(streamerID))
         # topClipsData = self.retrieveData(url)
         # Returns False if the streamer was not found or if the given streamer has no clips
         if not topClipsData["data"]:
@@ -157,7 +160,8 @@ class twitch_APIM:
             # In the event that less clip data is retrieved from the twitch API than expected, the remaining data that is required is retrieved
             if len(clipList) != 5:
                 requiredClips = 5 - len(clipList)
-                url = "https://api.twitch.tv/helix/clips?first=" + str(requiredClips) + "&after=" + str(cursorKey) + "&broadcaster_id=" + str(streamerID)
+                url = "https://api.twitch.tv/helix/clips?first=" + str(requiredClips) + "&after=" + str(
+                    cursorKey) + "&broadcaster_id=" + str(streamerID)
                 topClipsData = self.retrieveData(url)
                 cursorKey = topClipsData["pagination"]["cursor"]
         return clipList
@@ -196,7 +200,8 @@ class twitch_APIM:
         manip4 = manip4.replace('.', ':')
         final_end = f'{manip3[0]}:{manip3[1]}:{manip4}Z'
 
-        clipsDict = self.retrieveData(f"https://api.twitch.tv/helix/clips?broadcaster_id={streamerID}&first=1&started_at={final_start}&ended_at={final_end}")
+        clipsDict = self.retrieveData(
+            f"https://api.twitch.tv/helix/clips?broadcaster_id={streamerID}&first=1&started_at={final_start}&ended_at={final_end}")
         if not clipsDict["data"]:
             return False
         else:
@@ -222,21 +227,40 @@ class twitch_APIM:
         # Return the ID of the given name
         return gameDetails["data"][0]["id"]
 
-    def gameTopStreamers(self, gameIdentifier, userID):
+    def gameTopStreamers(self, userID, gameIdentifier):
         """
         Used to retrieve a list containing the top english streamers for a given game
 
         :param gameIdentifier: str/int - Name of game or ID of a game
+        :param userID: int - Discord ID of user
         :return: list - A list containing sublists which contain basic stream information for the top 5 english
         streams playing the provided game. Sorted by most popular stream first then descending
         """
+        originalGameIdentifier = gameIdentifier
         # Runs if the name of a game is given rather than a game ID
-        if not gameIdentifier.isdigit():
+        if not str(gameIdentifier).isdigit():
             # Retrieves the ID of a given name
             gameIdentifier = self.getGameID(gameIdentifier)
-            # Return False if the given game name was invalid
+            # twitch ID of game was not found
             if not gameIdentifier:
-                return False
+                # Searches for the steam ID of the game (this is used because the "findGameID" method removes all
+                # non-alphanumeric characters and sets the string to lowercase as to allow the desired game to be found
+                # without concern for special symbols or capitalization)
+                gameIdentifier = steamHandler.findGameID(originalGameIdentifier)
+                # Steam ID of game could not be found, return False
+                if not gameIdentifier:
+                    return False
+                # Get the steam name of the game then search for the twitch game ID
+                gameIdentifier = steamHandler.getGameName(gameIdentifier)
+                # Removes special characters that aren't use by twitch but may be used in a title of a steam game
+                refinedIdentifier = ""
+                for character in gameIdentifier:
+                    if character in string.printable:
+                        refinedIdentifier += character
+                gameIdentifier = self.getGameID(refinedIdentifier)
+                # Game ID was still not found on twitch, return False
+                if not gameIdentifier:
+                    return False
         url = f"https://api.twitch.tv/helix/streams?game_id={str(gameIdentifier)}&first=15&language=en"
         # Retrieves required information regarding top 5 english streams playing the given game
         gameStreamData = self.retrieveData(url)
@@ -271,6 +295,9 @@ class twitch_APIM:
         if favouriteStreamers:
             # Extracts the list of favourited streamers
             favouriteStreamers = favouriteStreamers[2]
+            # User has no favourited streamers
+            if favouriteStreamers == [""]:
+                return False
             # Produces the list of which is to be returned
             for streamer in favouriteStreamers:
                 streamerStreamDetails = self.streamDetails(self.getStreamerID(streamer))
@@ -288,9 +315,13 @@ class twitch_APIM:
 
         :param streamerID: int - ID of streamer
         :return: str - Name of streamer
+        returns False if the given ID does not relate to any streamer
         """
         # Retrieves data regarding the streaming
         streamerData = self.retrieveData(f"https://api.twitch.tv/helix/users?id={streamerID}")
+        # Invalid streamer ID provided
+        if not streamerData["data"]:
+            return False
         # Extracts the name of the streamer
         streamerName = streamerData["data"][0]["login"]
         return streamerName
