@@ -1,7 +1,7 @@
-from Data_Control_Files.Local_Store import storageHandler
-from Data_Control_Files.Steam_API import steamHandler
-from Data_Control_Files.Twitch_API import twitchHandler
-from Data_Control_Files.Graph_Production import produceSingleGraph, produceComparisonGraph
+from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
+from Discord_chatbot.Data_Control_Files.Steam_API import steamHandler
+from Discord_chatbot.Data_Control_Files.Twitch_API import twitchHandler
+from Discord_chatbot.Data_Control_Files.Graph_Production import produceSingleGraph, produceComparisonGraph
 
 
 def alphanumericString(rawString):
