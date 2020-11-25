@@ -87,7 +87,7 @@ def produceSingleGraph(ID, trackedType):
     plt.title(graphTitle)
 
     # Saves the graph as "botGraph.png"
-    plt.savefig('botGraph.png', bbox_inches='tight')
+    plt.savefig('images/botGraph.png', bbox_inches='tight')
     return True
 
 
@@ -226,6 +226,6 @@ def produceComparisonGraph(ID1, ID2, trackedType):
     plt.title(graphTitle)
 
     # Saves the graph as "botGraph.png"
-    plt.savefig('botGraph.png', bbox_inches='tight')
+    plt.savefig('images/botGraph.png', bbox_inches='tight')
     return True
 
