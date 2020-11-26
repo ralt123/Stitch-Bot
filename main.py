@@ -1,16 +1,15 @@
 # imports:
 import discord
-import sys
 from discord.ext import commands
 from discord.ext.commands import has_permissions, check
 from discord import Embed, Color
 from Discord_chatbot.Data_Control_Files.Steam_API import *
 from Discord_chatbot.Data_Control_Files.Twitch_API import *
-from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
+from Discord_chatbot.Data_Control_Files.Local_Store import *
 import asyncio
 from Encryption import encryptionAES128
 from Bot_response import response_proccessing
-
+from datetime import datetime
 """This is Stitch Bots Main source code. Stitch Bot is an interactive discord bot that gives information about streamers 
 and games that you want to know about, it also stores users preferences and keeps you updated on the latest games and 
 streamers that you want to track"""
@@ -23,15 +22,11 @@ comment structure:
 {Exception Details}
 """
 
-
-class DM_access:
-    def __init__(self):
-        self.access_dict = {}
-        self.dm_list = []
-
-    def access(self, id, name):
-
-        storageHandler.checkIfChecked(id,name)
+start_time = datetime.now()
+if int(start_time.strftime("%M")) >= 30:
+    start_time = int(start_time.strftime("%H"))+1
+else:
+    start_time = int(start_time.strftime("%H"))
 
 
 # Stitch Bot main class
@@ -53,9 +48,11 @@ class stitchBot(commands.Bot):
         self.event_set()
         self.loop.create_task(self.background_tracker())
         self.guild_dict = {}
+        self.checked_dict = {}
         self.channel_list = []
         self.embed = Embed
         self.colour = Color(0x000000)
+
     # METHODS THAT ARE NOT COMMANDS OR EVENTS:
 
     # - on_ready function - part of discord.py function starts when bot is ready
@@ -83,11 +80,6 @@ class stitchBot(commands.Bot):
                     print(self.channel_list)
             self.guild_dict[guild] = self.channel_list
 
-    @staticmethod
-    def correct_channel(ctx):
-        if not ctx.channel.name == 'questions':
-            return True
-
     async def background_tracker(self):
         await self.wait_until_ready()
         while not self.is_closed():
@@ -96,8 +88,28 @@ class stitchBot(commands.Bot):
                 id = user[0]
                 print(id)
                 streamer = user[1]
+
+                def has_checked(id, name):
+                    if not self.checked_dict:
+                        return False
+
+                    if int(datetime.now().strftime("%H"))-start_time>5:
+                        for item in self.checked_dict.values():
+                            item[1] = False
+
+                    for key in self.checked_dict.keys():
+                        if key == id:
+                            if self.checked_dict[id][0] == name:
+                                if self.checked_dict[1]:
+                                    return True
+                                else:
+                                    return False
+                        else:
+                            self.checked_dict[id] = [streamer, True]
+                            return False
+
                 for name in streamer:
-                    if not storageHandler.checkIfChecked(await self.fetch_user(int(id)), name):
+                    if not has_checked(id, streamer):
                         streamers_id = twitchHandler.getStreamerID(name)
                         print(streamers_id)
                         stream_checker = twitchHandler.checkIfStreaming(streamers_id)
@@ -129,19 +141,21 @@ class stitchBot(commands.Bot):
                             print(user_dm)
                             await user_dm.send(embed=embed)
                             await user_dm.send(vod)
-            await asyncio.sleep(1800)
+            await asyncio.sleep(30)
 
+    @staticmethod
+    def correct_channel(ctx):
+        if not ctx.channel.name == 'questions':
+            return True
 
-
-    '''
-    - sets all events for discord bots
-    Events Include:
-        - on_member_join
-        - on_member_remove
-        - on_command_error
-    '''
     def event_set(self):
-
+        """
+        - sets all events for discord bots
+        Events Include:
+            - on_member_join
+            - on_member_remove
+            - on_command_error
+        """
         # - EVENTS (@self.event decorator used to show discord.py that these methods are events)
 
         @self.event
@@ -155,12 +169,7 @@ class stitchBot(commands.Bot):
         # - Error handling:
             # - if a command is spelt wrong or does not exist it will send invalid command
 
-        @self.event
-        async def on_command_error(ctx, error):
-            if isinstance(error, commands.errors.CommandNotFound or Exception):
-                await ctx.send('**Invalid command used**')
-            else:
-                await ctx.send(f'**Error occured:**\n```{error}```')
+
 
         @self.event
         async def on_message(message):
@@ -173,20 +182,20 @@ class stitchBot(commands.Bot):
 
             await bot.process_commands(message)
 
-    '''
-    - Sets all commands for discord Bot
-    These Include:
-        - !hello
-        - !clear
-        - !kick
-        - !ban
-        - unban
-        - !stream
-        - !game
-        - !stats
-        - !command
-    '''
     def command_set(self):
+        """
+        - Sets all commands for discord Bot
+        These Include:
+            - !hello
+            - !clear
+            - !kick
+            - !ban
+            - unban
+            - !stream
+            - !game
+            - !stats
+            - !command
+        """
         # - COMMANDS (@self.command decorator)
 
         @self.command()
@@ -194,48 +203,53 @@ class stitchBot(commands.Bot):
         async def hello(ctx):
             await ctx.channel.send('**Hello** :yum:')
 
-        '''
-        clears conversation by x amount of lines 
-        parameters:
-            ctx - context object that discord.py passes in when command is invoked
-            amount - the amount of lines that you want to be cleared
-        '''
+
         @self.command()
         @check(self.correct_channel)
         async def clear(ctx, amount=5):
+            """
+            clears conversation by x amount of lines
+            parameters:
+                ctx - context object that discord.py passes in when command is invoked
+                amount - the amount of lines that you want to be cleared
+            """
             await ctx.channel.purge(limit=amount)
 
-        '''
-        kicks user specified from the discord server that the command was invoked in
-         parameters:
-            ctx - line 121
-            member - type:(abc.Snowflake)The member to kick from their server.
-            reason - reason for user to be kicked, always set to None 
-        Note: Two decorators to make sure correct permissions are required
-        '''
+
         @self.command()
         @check(self.correct_channel)
         @has_permissions(kick_members=True)
         async def kick(ctx, member: discord.Member, *, reason=None):
+            """
+            kicks user specified from the discord server that the command was invoked in
+             parameters:
+                ctx - line 121
+                member - type:(abc.Snowflake)The member to kick from their server.
+                reason - reason for user to be kicked, always set to None
+            Note: Two decorators to make sure correct permissions are required
+            """
             await member.kick(reason=reason)
             await ctx.send(f'**User {member} has been kicked**')
-        '''
-        Same as Kick command but for Banning(see line 128)
-        '''
+
+
         @self.command()
         @check(self.correct_channel)
         @has_permissions(ban_members=True)
         async def ban(ctx, member: discord.Member, *, reason=None):
+            """
+            Same as Kick command but for Banning(see line 128)
+            """
             await member.ban(reason=reason)
             await ctx.send(f'**User {member} has been banned**')
-        '''
-        Unbans User specified from server that command was invoked
-        parameters:
-            see kick command 
-        '''
+
         @self.command()
         @check(self.correct_channel)
         async def unban(ctx):
+            """
+            Unbans User specified from server that command was invoked
+            parameters:
+                see kick command
+            """
             banned_user = await ctx.guild.bans()
             banned_user_list = []
             itterate = 0
@@ -425,34 +439,12 @@ class stitchBot(commands.Bot):
 
         @self.command()
         @check(self.correct_channel)
-        async def commands(ctx):
-            title = '- Commands:'
-            desc = """
-            - !hello
-            - !clear
-            - !kick
-            - !ban
-            - unban
-            - !stream
-            - !game
-            - !stats
-            - !command
-            """
-            embed = self.embed(
-                title=f'{title}',
-                description=f'{desc}',
-                colour=self.colour, )
-
-            await ctx.send(embed=embed)
-
-        @self.command()
-        @check(self.correct_channel)
         async def info(ctx):
             title = ':information_source:**Info**'
             desc = '''This is Stitch Bot ,It is an interactive Discord Bot that helps Gamers gain information about 
-            the games they love and the Streamers they watch. It can help you find the most popular game to play 
-            and tell you when your favourite streamer is Streaming. It can also help with your usual basic 
-            commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. '''
+                    the games they love and the Streamers they watch. It can help you find the most popular game to play 
+                    and tell you when your favourite streamer is Streaming. It can also help with your usual basic 
+                    commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. '''
 
             embed = self.embed(
                 title=f'{title}',
@@ -463,17 +455,18 @@ class stitchBot(commands.Bot):
             await ctx.send(embed=embed)
 
         @self.group()
+        @check(self.correct_channel)
         async def pref(ctx):
             if ctx.invoked_subcommand is None:
                 title = '**Preferences 🖥️**'
                 desc = '''**1** - favourite_streamers
-                        **2** - favourite_games
-                        **3** - favourite_genres
-                        **4** - tracked_game
-                        **5** - tracked_stream
-                        **6** - blacklisted_streamers
-                        
-                        - Or use **pref remove** for removing preferences'''
+                                **2** - favourite_games
+                                **3** - favourite_genres
+                                **4** - tracked_game
+                                **5** - tracked_stream
+                                **6** - blacklisted_streamers
+
+                                - Or use **pref remove** for removing preferences'''
 
                 embed = self.embed(
                     title=title,
@@ -496,8 +489,10 @@ class stitchBot(commands.Bot):
                     return False
                 else:
                     return True
+
             if check_real_streamer(favourite_streamers.content):
-                storageHandler.writeUserDetails(favourite_streamers.author.id, "favourite_streamers", f"{favourite_streamers.content}")
+                storageHandler.writeUserDetails(favourite_streamers.author.id, "favourite_streamers",
+                                                f"{favourite_streamers.content}")
                 await ctx.send('**+ Preference Added**')
 
             else:
@@ -519,7 +514,8 @@ class stitchBot(commands.Bot):
                     return True
 
             if favourite_games_check(favourite_games.content):
-                storageHandler.writeUserDetails(favourite_games.author.id, "favourite_games", f"{favourite_games.content}")
+                storageHandler.writeUserDetails(favourite_games.author.id, "favourite_games",
+                                                f"{favourite_games.content}")
                 await ctx.send('**+ Preference Added**')
             else:
                 await ctx.send('**Game Not Found**')
@@ -621,15 +617,15 @@ class stitchBot(commands.Bot):
                 if not item == '':
                     if not iter == 0:
                         if item is not None:
-                                if type(item) == list:
-                                    for stuff in item:
-                                        desc += f'\n**{count}** - {stuff}'
-                                        count += 1
-                                        stuffs.append(stuff)
-                                else:
+                            if type(item) == list:
+                                for stuff in item:
                                     desc += f'\n**{count}** - {stuff}'
                                     count += 1
                                     stuffs.append(stuff)
+                            else:
+                                desc += f'\n**{count}** - {stuff}'
+                                count += 1
+                                stuffs.append(stuff)
             embed = self.embed(
                 title=title,
                 description=desc,
@@ -641,7 +637,7 @@ class stitchBot(commands.Bot):
             def check(msg):
                 return msg.author == ctx.author and msg.channel == ctx.channel
 
-            item_to_remove = stuffs[int((await bot.wait_for('message', check=check)).content)-1]
+            item_to_remove = stuffs[int((await bot.wait_for('message', check=check)).content) - 1]
 
             def get_key(value):
                 keys = details.keys()
@@ -655,6 +651,33 @@ class stitchBot(commands.Bot):
 
             storageHandler.deleteUserDetails(ctx.author.id, get_key(item_to_remove), item_to_remove)
             await ctx.send('** - Preference removed**')
+
+        @self.command()
+        @check(self.correct_channel)
+        async def commands(ctx):
+            title = '- Commands:'
+            desc = """
+            - !hello
+            - !clear
+            - !kick
+            - !ban
+            - !unban
+            - !stream
+            - !game
+            - !stats
+            - !pref
+            - !info
+            - !command
+            """
+            embed = self.embed(
+                title=f'{title}',
+                description=f'{desc}',
+                colour=self.colour, )
+
+            await ctx.send(embed=embed)
+
+
+
 
 
 if __name__ == '__main__':
@@ -674,4 +697,5 @@ if __name__ == '__main__':
     token = encryption.decrypt(encrypted_token)
 
     bot = stitchBot(prefix='!')
+    print(start_time)
     bot.run(f'{token}')
