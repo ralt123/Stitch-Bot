@@ -7,7 +7,7 @@ from Discord_chatbot.Data_Control_Files.Twitch_API import twitchHandler
 
 def produceSingleGraph(ID, trackedType):
     """
-    Produces a single graph for a game/streamer and saves it as "images/botGraph.png"
+    Produces a single graph for a game/streamer and saves it as "botGraph.png" in the "images" folder
 
     :param ID: int - ID of tracked game/streamer
     :param trackedType: str - either "twitch" or "steam" to indicate the platform of which the ID originates from
@@ -93,7 +93,7 @@ def produceSingleGraph(ID, trackedType):
 
 def produceComparisonGraph(ID1, ID2, trackedType):
     """
-    Produces a graph for a comparison between 2 games/streamers and saves it as "images/botGraph.png"
+    Produces a graph for a comparison between 2 games/streamers and saves it as "botGraph.png" in the "images" folder
     Compares days of which both IDs were tracked
 
     :param ID1: int - ID of first tracked game/streamer
