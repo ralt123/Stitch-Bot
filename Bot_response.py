@@ -105,15 +105,18 @@ for intent, keys in keywords.items():
   keywordsdictonary[intent]=re.compile('|'.join(keys))
 while True:
   userinput = input().lower()
-  rename = re.findall(r"[^()0-9-]+", userinput)
-  numbers = re.findall('[0-9]+', userinput)
-  matchedintent = None 
+  words = userinput.split()
+  resultwords  = [i for i in words if i not in listofwords]
+  result = ' '.join(resultwords)
+  rename = re.findall(r"[^()0-9-]+", result)
+  numbers = re.findall('[0-9]+', result)
+  matched = None 
   for intent,pattern in keywordsdictonary.items():
     if re.search(pattern, userinput):
-      matchedintent=intent  
+      matched=intent  
   key='Undefined' 
-  if matchedintent in responses:
-    key = matchedintent
+  if matched in responses:
+    key = matched
   responses[hello]()
   responses[Streamer](rename)#name
   responses[info]()
@@ -133,3 +136,9 @@ while True:
   responses[overall](rename)#name
   responses[detail](rename)#name
   responses[Undefined]()
+
+
+
+
+
+
