@@ -74,6 +74,7 @@ class twitch_APIM:
         :param url: String containing the url of the required data
         :return: The data retrieved from the given url as a dictionary
         """
+        print(url)
         # Opens the required page with necessary data as headers
         request = urllib.request.Request(url, headers={"Authorization": "Bearer " + self.__auth,
                                                        'Client-ID': self.__clientID})
@@ -333,4 +334,3 @@ class twitch_APIM:
 
 # Creates object
 twitchHandler = twitch_APIM()
-

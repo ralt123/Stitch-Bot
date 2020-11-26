@@ -1,10 +1,10 @@
 import nltk
-nltk.download()
 import re
 from nltk.corpus import wordnet
+from Discord_chatbot.Process_Function_H import *
 
 
-listofwords=['hello','Streamer', 'info', 'clear' ,'kick', 'ban','game' ,'commands','friends']
+listofwords=['hello','Streamer', 'info', 'clear' ,'kick', 'ban','game' ,'commands','friends','friendship','set','player','check','preference','generate','compare','current','overall','detail']
 listofsynonym={}
 keywords={}
 keywordsdictonary={}
@@ -19,63 +19,70 @@ for word in listofwords:
       synonyms.append(name)
   listofsynonym[word]=set(synonyms)
 
-keywords['greet']=[]
-for synonym in list(listofsynonym['hello']):
-  keywords['greet'].append('.*\\b'+synonym+'\\b.*')
-keywords['Streamer']=[]
-for synonym in list(listofsynonym['Streamer']):
-  keywords['Streamer'].append('.*\\b'+synonym+'\\b.*')
-keywords['info']=[]
-for synonym in list(listofsynonym['info']):
-  keywords['info'].append('.*\\b'+synonym+'\\b.*')
-keywords['clear']=[]
-for synonym in list(listofsynonym['clear']):
-  keywords['clear'].append('.*\\b'+synonym+'\\b.*')
-keywords['kick']=[]
-for synonym in list(listofsynonym['kick']):
-  keywords['kick'].append('.*\\b'+synonym+'\\b.*')
-keywords['ban']=[]
-for synonym in list(listofsynonym['ban']):
-  keywords['ban'].append('.*\\b'+synonym+'\\b.*')
-keywords['game']=[]
-for synonym in list(listofsynonym['game']):
-  keywords['game'].append('.*\\b'+synonym+'\\b.*')
-keywords['commands']=[]
-for synonym in list(listofsynonym['commands']):
-  keywords['commands'].append('.*\\b'+synonym+'\\b.*')
-keywords['friends']=[]
+keywords['friends','when','since']=[]
 for synonym in list(listofsynonym['friends']):
-  keywords['friends'].append('.*\\b'+synonym+'\\b.*')
+  keywords['friends','when','since'].append('.*\\b'+synonym+'\\b.*')
+keywords['friendship','friends','playing','games']=[]
+for synonym in list(listofsynonym['friends']):
+  keywords['friendship','friends','playing','games'].append('.*\\b'+synonym+'\\b.*')
+keywords['set','steam','id']=[]
+for synonym in list(listofsynonym['set']):
+  keywords['set','steam','id'].append('.*\\b'+synonym+'\\b.*')
+keywords['player','count','game','currently','how','many']=[]
+for synonym in list(listofsynonym['player']):
+  keywords['player','count','game','currently','how','many'].append('.*\\b'+synonym+'\\b.*')
+keywords['check','playing','game','streamer']=[]
+for synonym in list(listofsynonym['check']):
+  keywords['check','playing','game','streamer'].append('.*\\b'+synonym+'\\b.*')
+keywords['preference','set','preference']=[]
+for synonym in list(listofsynonym['preference']):
+  keywords['preference','set','preference'].append('.*\\b'+synonym+'\\b.*')
+keywords['generate','graph','viewer','player','single']=[]
+for synonym in list(listofsynonym['generate']):
+  keywords['generate','graph','viewer','player','single'].append('.*\\b'+synonym+'\\b.*')
+keywords['compare','graphs','generate']=[]
+for synonym in list(listofsynonym['compare']):
+  keywords['compare','graphs','generate'].append('.*\\b'+synonym+'\\b.*')
+keywords['current','top','streamer']=[]
+for synonym in list(listofsynonym['current']):
+  keywords['current','top','streamer'].append('.*\\b'+synonym+'\\b.*')
+keywords['overall','top','streamer']=[]
+for synonym in list(listofsynonym['overall']):
+  keywords['overall','top','streamer'].append('.*\\b'+synonym+'\\b.*')
+keywords['detail','current','stream']=[]
+for synonym in list(listofsynonym['detail']):
+  keywords['detail','current','stream'].append('.*\\b'+synonym+'\\b.*')
 
 
-responses={ 
-'greet':bruh,
-'Streamer':function,
-'info':function,
-'clear' :function,
-'kick':function,
-'ban':function,
-'commands':function,
-'game' :function,
-'friends':function,
-'Undefined':function
-}
-
-for intent, keys in keywords.items():
-  keywordsdictonary[intent]=re.compile('|'.join(keys))
-while True:
-  userinput = input().lower()
-  matchedintent = None 
-  for intent,pattern in keywordsdictonary.items():
-    if re.search(pattern, userinput):
-      matchedintent=intent  
-  key='Undefined' 
-  if matchedintent in responses:
-    key = matchedintent
-  responses[key]()
-
-
-
-
-
-
+def response_proccessing(input, id):
+  responses = {
+    'hello': hello,
+    'Streamer': userFavouriteStreamersStreaming,
+    'info': info,
+    'commands': commands,
+    'game': game,
+    'friends': friendsSince,
+    'friendship': friendsPlaying,
+    'set': setSteamID,
+    'player': currentPlayerCountFavouriteGames(id),
+    'check': checkUserPlayingGame,
+    'preference': setPreference,
+    'generate': generateSingleGraph,
+    'compare': generateCompareGraph,
+    'current': gameCurrentTopStreamers,
+    'overall': overallTopStreamerClips,
+    'detail': currentStreamDetails,
+    'Undefined': undefined
+  }
+  for intent, keys in keywords.items():
+    keywordsdictonary[intent]=re.compile('|'.join(keys))
+  while True:
+    userinput = input.lower()
+    matchedintent = None
+    for intent,pattern in keywordsdictonary.items():
+      if re.search(pattern, userinput):
+        matchedintent=intent
+    key='Undefined'
+    if matchedintent in responses:
+      key = matchedintent
+    responses[key]()
