@@ -356,6 +356,12 @@ class local_StorageM:
                         # Deletes data in list
                         if userDetails[i+1] in multipleValue:
                             multipleValue.remove(userDetails[i+1])
+                            multipleValueString = ""
+                            for value in multipleValue:
+                                multipleValueString += value + ","
+                            if multipleValueString:
+                                multipleValueString = multipleValueString[:-1]
+                            storeData[self.detailsStored.index(userDetails[i])] = multipleValueString
                     # Delete the data held for the specific attribute
                     else:
                         storeData[self.detailsStored.index(userDetails[i])] = ""
