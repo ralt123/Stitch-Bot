@@ -2,7 +2,7 @@ from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
 from Discord_chatbot.Data_Control_Files.Steam_API import steamHandler
 from Discord_chatbot.Data_Control_Files.Twitch_API import twitchHandler
 from Discord_chatbot.Data_Control_Files.Graph_Production import produceSingleGraph, produceComparisonGraph
-
+import random
 
 def alphanumericString(rawString):
     """
@@ -114,16 +114,81 @@ def updateTracked():
                     storageHandler.storeTrackedData(streamerID, streamerViewerCount, "twitch")
     return True
 
-# print(updateTracked())
 
 def getTopGames(userID=False):
-    # trash api down, do later
+    # Required API went down for maintenance during creation. This function will be complete if the API comes back online.
     topGames = steamHandler.top10Games(userID)
     if not topGames:
         return "This function is currently unavailable as the required API is currently down, please try again later."
     return topGames
 
-print(getTopGames())
+
+def currentGamePlayerCount(gameID):
+    """
+    Used to response a user requesting the player count of a specified game
+
+    :param gameID: str/int - Name or ID of steam game
+    :return: str - Response to user
+    """
+    # Validates the passed ID/name and returns the integer ID of the object passed or a string error message
+    gameID = validationOfID(gameID, "steam_game")
+    # Run when the validation was successful
+    if str(gameID).isdigit():
+        playerCount = steamHandler.gamePlayerCount(gameID)
+        gameName = steamHandler.getGameName(gameID)
+        # Adds commas to the player count to allow the reader to more easily distinguish its value
+        if playerCount > 999:
+            playerCount = str(playerCount)
+            playerCountLen = len(playerCount)
+            playerCount = playerCount[:playerCountLen-3] + "," + playerCount[playerCountLen-3:]
+            if len(playerCount) > 7:
+                playerCount = playerCount[0] + "," + playerCount[1:]
+        return f"{gameName} currently has {playerCount} players"
+    return "Sorry, but I don't recognize that game"
+
+
+def botInfo():
+    """
+    Used to return bot info in a discord suitable format
+
+    :return: str - Bot's response
+    """
+    return '''
+:information_source:**Info**
+```diff
++ This is Stitch Bot ,It is an interactive Discord Bot that helps Gamers gain information about the games they love and the Streamers they watch. It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. 
+```'''
+
+
+def botGreeting():
+    """
+    Returns a random greeting.
+
+    :return: str - A random greeting
+    """
+    # List of possible greetings
+    possibleGreeting = ["Hi!", "Pleasure to meet you.", "Hello!", "Greetings", "Hello, what can I help you with?"]
+    # Generates a random index to determine the greeting returned
+    randomIndex = random.randint(0, len(possibleGreeting)-1)
+    return possibleGreeting[randomIndex]
+
+
+def botCommands():
+    """
+    Used to suggest a command for use by the user.
+    Doesn't include all commands, just ones that I thought were particularly interesting.
+
+    :return: str - Suggestion of command to try
+    """
+    possibleIdeas = (
+        "tracking a streamer to get notified when they stream", "producing a graph of your favourite tracked game or streamer",
+        "producing a graph comparing your two favourite tracked games/streamers",
+        "checking when you became friends with another user on steam", "checking the top streams for a specific game",
+        "checking what games your friends are playing", "requesting the top clips for your favourite streamer")
+    randomIndex = random.randint(0, len(possibleIdeas) - 1)
+    botResponse = "I can do many things! Tell me your preferences and I'll keep them in mind whilst talking to you! Why don't you try " + possibleIdeas[randomIndex] + "?"
+    return botResponse
+
 
 def friendsSince(userID, friendID):
     """
@@ -217,7 +282,7 @@ def setSteamID(userID, steamID):
 
 def currentPlayerCountFavouriteGames(userID):
     """
-    Generates a response to inform the user of the current player counts for their favoruite games
+    Generates a response to inform the user of the current player counts for their favourite games
 
     :param userID: int - Discord ID of user
     :return: str - Response to user's request
@@ -298,6 +363,7 @@ def setPreference(userID, preferenceID, preferenceType):
     # Stores data of which cannot be validated (No API for all steam game genres available)
     elif preferenceType in ["favourite_genre"]:
         storageHandler.writeUserDetails(userID, preferenceType, preferenceID)
+        return "Preference set successfully!"
     # Raise an error to inform a fellow programmer using the function of their invalid arguments passed
     else:
         raise Exception("You must pass a valid 'preferenceType', please refer to documentation")
@@ -385,7 +451,7 @@ def gameCurrentTopStreamers(userID, gameIdentifier):
     # Prepares and returns the string response
     returnString = ""
     for streamData in streamList:
-        returnString += f"{streamData[0]} streaming {streamData[1]} with {streamData[2]} viewers, "
+        returnString += f"{streamData[0]} streaming `{streamData[1]}` with {streamData[2]} viewers, "
     returnString = returnString[:-2]
     return returnString
 
@@ -411,8 +477,13 @@ def overallTopStreamerClips(streamerID):
     returnString = returnString[:-2]
     return returnString
 
-
 def currentStreamDetails(streamerID):
+    """
+    Responds to a request asking for details regarding a specific streamer
+
+    :param streamerID: str/int - Name/ID of specific streamer
+    :return: str - Response to the user's request
+    """
     if not str(streamerID).isdigit():
         streamerID = twitchHandler.getStreamerID(streamerID)
     streamData = twitchHandler.streamDetails(streamerID)

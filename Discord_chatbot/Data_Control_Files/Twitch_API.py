@@ -216,14 +216,36 @@ class twitch_APIM:
         :param gameName: str - Name of the game in question
         :return: str/Boolean - ID of given name or False if the given game name was invalid
         """
+        originalGameName = gameName
         # Replaces spaces in a format understood by the twitch API
         gameName = gameName.replace(" ", "%20")
         url = "https://api.twitch.tv/helix/games?name=" + gameName
         # Retrieves required data
         gameDetails = self.retrieveData(url)
-        # Return False if the given game name was invalid
         if not gameDetails["data"]:
-            return False
+            # Searches for the steam ID of the game (this is used because the "findGameID" method removes all
+            # non-alphanumeric characters and sets the string to lowercase as to allow the desired game to be found
+            # without concern for special symbols or capitalization)
+            gameIdentifier = steamHandler.findGameID(originalGameName)
+            # Steam ID of game could not be found, return False
+            if not gameIdentifier:
+                return False
+            # Get the steam name of the game then search for the twitch game ID
+            gameIdentifier = steamHandler.getGameName(gameIdentifier)
+            # Removes special characters that aren't use by twitch but may be used in a title of a steam game
+            refinedIdentifier = ""
+            for character in gameIdentifier:
+                if character in string.printable:
+                    refinedIdentifier += character
+            # Replaces spaces in a format understood by the twitch API
+            refinedIdentifier = refinedIdentifier.replace(" ", "%20")
+            url = "https://api.twitch.tv/helix/games?name=" + refinedIdentifier
+            # Retrieves required data
+            gameDetails = self.retrieveData(url)
+
+            # Return False if the given game name was invalid
+            if not gameDetails["data"]:
+                return False
         # Return the ID of the given name
         return gameDetails["data"][0]["id"]
 
@@ -243,24 +265,7 @@ class twitch_APIM:
             gameIdentifier = self.getGameID(gameIdentifier)
             # twitch ID of game was not found
             if not gameIdentifier:
-                # Searches for the steam ID of the game (this is used because the "findGameID" method removes all
-                # non-alphanumeric characters and sets the string to lowercase as to allow the desired game to be found
-                # without concern for special symbols or capitalization)
-                gameIdentifier = steamHandler.findGameID(originalGameIdentifier)
-                # Steam ID of game could not be found, return False
-                if not gameIdentifier:
-                    return False
-                # Get the steam name of the game then search for the twitch game ID
-                gameIdentifier = steamHandler.getGameName(gameIdentifier)
-                # Removes special characters that aren't use by twitch but may be used in a title of a steam game
-                refinedIdentifier = ""
-                for character in gameIdentifier:
-                    if character in string.printable:
-                        refinedIdentifier += character
-                gameIdentifier = self.getGameID(refinedIdentifier)
-                # Game ID was still not found on twitch, return False
-                if not gameIdentifier:
-                    return False
+                return False
         url = f"https://api.twitch.tv/helix/streams?game_id={str(gameIdentifier)}&first=15&language=en"
         # Retrieves required information regarding top 5 english streams playing the given game
         gameStreamData = self.retrieveData(url)
