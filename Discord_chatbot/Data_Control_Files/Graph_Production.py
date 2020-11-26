@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
 from Discord_chatbot.Data_Control_Files.Steam_API import steamHandler
 from Discord_chatbot.Data_Control_Files.Twitch_API import twitchHandler
-
+from Discord_chatbot.Data_Control_Files.Unix_To_UTC import fromUnixToUTC
 
 def produceSingleGraph(ID, trackedType):
     """
@@ -41,13 +41,13 @@ def produceSingleGraph(ID, trackedType):
     actualXAxis = []
     yAxis = []
     # Sets starting date for trend line
-    date = storageHandler.unixToUTC(storedData[1][0])[0:3]
+    date = fromUnixToUTC(storedData[1][0])[0:3]
     date = str(date)[1:-1].replace(", ", "/")
     firstDate = date
 
     # Calculates the date stored and appends to necessary lists
     for i in range(len(storedData[1])):
-        date = storageHandler.unixToUTC(storedData[1][i])
+        date = fromUnixToUTC(storedData[1][i])
         displayDate = str(date[0:2])[1:-1].replace(", ", "/")
         actualDate = str(date[0:3])[1:-1].replace(", ", "/")
         displayXAxis.append(displayDate)
@@ -172,14 +172,14 @@ def produceComparisonGraph(ID1, ID2, trackedType):
     yAxis1 = []
     yAxis2 = []
     # Sets first date for trend lines
-    date = storageHandler.unixToUTC(storedData1[1][indexList1[0]])[0:3]
+    date = fromUnixToUTC(storedData1[1][indexList1[0]])[0:3]
     date = str(date)[1:-1].replace(", ", "/")
     firstDate = date
 
     # Appends dates to lists, a last containing the actual time in UTC and another list containing
     # displayable time in UTC
     for currentIndex in indexList1:
-        date = storageHandler.unixToUTC(storedData1[1][currentIndex])
+        date = fromUnixToUTC(storedData1[1][currentIndex])
         displayDate = str(date[0:2])[1:-1].replace(", ", "/")
         actualDate = str(date[0:3])[1:-1].replace(", ", "/")
         displayXAxis.append(displayDate)
@@ -227,4 +227,3 @@ def produceComparisonGraph(ID1, ID2, trackedType):
     # Saves the graph as "botGraph.png" in the "images" folder
     plt.savefig('images/botGraph.png', bbox_inches='tight')
     return True
-

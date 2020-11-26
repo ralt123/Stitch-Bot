@@ -64,7 +64,7 @@ class twitch_APIM:
             elif keyDataValue[0] == "TwitchAuthenticationkey":
                 self.__auth = keyDataValue[1]
         if self.__auth == "" or self.__clientID == "":
-            raise ValueError('Missing API key/s - Please check the Keys text file.')
+            raise Exception('Missing API key/s - Please check the Keys text file.')
         """
 
     def retrieveData(self, url):
@@ -74,7 +74,6 @@ class twitch_APIM:
         :param url: String containing the url of the required data
         :return: The data retrieved from the given url as a dictionary
         """
-        print(url)
         # Opens the required page with necessary data as headers
         request = urllib.request.Request(url, headers={"Authorization": "Bearer " + self.__auth,
                                                        'Client-ID': self.__clientID})
@@ -82,8 +81,7 @@ class twitch_APIM:
         try:
             page = urllib.request.urlopen(request)
         except urllib.error.HTTPError as errorMessage:
-            raise ValueError(
-                f"HTTPError Likely causes - Possible API outage or incorrect API key/s\n{errorMessage}")
+            raise Exception(f"HTTPError Likely causes - Possible API outage or incorrect API key/s\n{errorMessage}")
         # Retrieves the required data held in the page abd returns it
         pageData = json.loads(page.read().decode())
         return pageData

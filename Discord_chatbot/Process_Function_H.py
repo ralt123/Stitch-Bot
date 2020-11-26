@@ -461,7 +461,7 @@ def overallTopStreamerClips(streamerID):
     Used to retrieve the top 5 all time clips for a specified streamer.
 
     :param streamerID: int/str - ID or name of twitch streamer
-    :return:
+    :return: str - Response to request
     """
     # Retrieves the ID of the streamer if their name was provided
     if not str(streamerID).isdigit():
@@ -477,6 +477,7 @@ def overallTopStreamerClips(streamerID):
     returnString = returnString[:-2]
     return returnString
 
+
 def currentStreamDetails(streamerID):
     """
     Responds to a request asking for details regarding a specific streamer
@@ -484,8 +485,10 @@ def currentStreamDetails(streamerID):
     :param streamerID: str/int - Name/ID of specific streamer
     :return: str - Response to the user's request
     """
+    # Checks if the argument passed is the name of a streamer, opposed to their ID
     if not str(streamerID).isdigit():
         streamerID = twitchHandler.getStreamerID(streamerID)
+    # Retrieves the required stream data
     streamData = twitchHandler.streamDetails(streamerID)
     if not streamData:
         return "Provided streamer is not currently streaming."

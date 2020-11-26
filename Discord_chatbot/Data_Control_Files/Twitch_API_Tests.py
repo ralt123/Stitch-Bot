@@ -20,8 +20,8 @@ except:
 
 
 class Twitch_API_TestCases(TestCase):
-    # Check if returned dcitonar be subset of dictionay
     def test_retrieve_data(self):
+        # checks that the inExpectedReturn dictionary is a subset of the returned dictionary
         inExpectedReturn={'display_name': 'example', 'id': '886609', 'login': 'example'}
         self.assertTrue(inExpectedReturn.items() <= twitchHandler.retrieveData("https://api.twitch.tv/helix/users?login=example")["data"][0].items(), "Critical retrieve data error")
 

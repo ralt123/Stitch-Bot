@@ -13,7 +13,7 @@ from Steam_API import steamHandler
 
 class Steam_API_TestCases(TestCase):
     def test_time_conversion(self):
-        self.assertEqual(steamHandler._unixToUTC(473310292), [31,12,1984,3,4,52])
+        self.assertEqual(steamHandler._unixToUTC(473310292), [31, 12, 1984, 3, 4, 52])
         self.assertEqual(steamHandler._unixToUTC(536457600), [1, 1, 1987, 0, 0, 0])
         self.assertEqual(steamHandler._unixToUTC(951782400), [29, 2, 2000, 0, 0, 0])
         self.assertEqual(steamHandler._unixToUTC(1053668635), [23, 5, 2003, 5, 43, 55])

@@ -8,6 +8,7 @@ steamHandler.gamePlayerCount(730)
 
 import urllib.request, json, os
 from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
+from Discord_chatbot.Data_Control_Files.Unix_To_UTC import fromUnixToUTC
 from Encryption import encryptionAES128
 
 
@@ -53,7 +54,7 @@ class steam_APIM:
             if keyDataValue[0] == "Steamkey":
                 self.__apiKey = keyDataValue[1]
         if self.__apiKey == "":
-            raise ValueError('Missing API key/s - Please check the Keys text file.')
+            raise Exception('Missing API key/s - Please check the Keys text file.')
         '''
 
     # Sets the absolute path for the game list
@@ -72,11 +73,11 @@ class steam_APIM:
         # Opens the webpage for data retrieval, page is closed once the data is retrieved
         try:
             with urllib.request.urlopen(url) as openPage:
-                data = json.loads(openPage.read().decode())
+                retrievedData = json.loads(openPage.read().decode())
         except urllib.error.HTTPError as errorMessage:
-            raise ValueError(
+            raise Exception(
                 f"HTTPError Possible causes - Possible API outage, invalid URL or incorrect API key/s\n{errorMessage}")
-        return data
+        return retrievedData
 
     # Merge sort method was made myself so it's efficiency may not be optimal but it shall suffice
     # As storing the game list is not for frequent use, I don't plan on continuing to optimise the sorting method.
@@ -297,7 +298,6 @@ class steam_APIM:
         # Defines the webpage that contains the required data
         url = "http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=" + self.__apiKey + \
               "&vanityurl=" + str(userURL)
-        print(url)
         # Opens the webpage for data retrieval, page is closed once the data is retrieved
         data = self.retrieveData(url)
         if data["response"]["success"] == 1:
@@ -560,57 +560,6 @@ class steam_APIM:
             return False
         return userInfo["friendslist"]["friends"]
 
-    @staticmethod
-    def _unixToUTC(unixTime):
-        """
-        Used to convert unix time to UTC
-
-        :param unixTime: int - time to be converted in unix
-        :return: List containing the time in UTC
-        Return format [day, month, year, hour, minute, second]
-        """
-        # unix is the seconds since 1/1/1970 00:00 and therefore the method must take into consideration leap days
-        daysInMonths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        dayFromLeap = unixTime / 86400
-        # when the first leap day occurs from the epoch in days - calculation is left expanded to explain
-        firstLeap = (365 * 2) + 31 + 29
-        # when the leap day repeats in days - calculation is left expanded to explain
-        repeatLeap = (365 * 4) + 1
-        leapDays = 0
-        # Checks if a leap day must be considered
-        if dayFromLeap >= firstLeap:
-            dayFromLeap -= firstLeap
-            leapDays += 1
-            # Removes all leap days from prior years
-            while dayFromLeap >= repeatLeap:
-                dayFromLeap -= repeatLeap
-                leapDays += 1
-        # Checks if the year of the date is a leap year
-        if dayFromLeap < 366 - (31 + 29):
-            daysInMonths[1] = 29
-            leapDays -= 1
-        day = (unixTime / 86400) - leapDays
-        # Run if year of date is leap year
-        if daysInMonths[1] == 29:
-            year = 1970 + (day - 1) / 365
-            day = (day - 1) % 365
-            # Adds removed day
-            day += 1
-        else:
-            year = 1970 + day / 365
-            day = day % 365
-        month = 1
-        # Calculates the month and day
-        while day > daysInMonths[month - 1]:
-            day -= daysInMonths[month - 1]
-            month += 1
-        # As epoch is from 1st of jan not 0 of jan, add a day
-        day += 1
-        hour = (day % 1) * 24
-        minute = (hour % 1) * 60
-        second = round((minute % 1) * 60)
-        timeList = [int(day), int(month), int(year), int(hour), int(minute), second]
-        return timeList
 
     def getFriendDate(self, userID1, userID2):
         """
@@ -637,7 +586,7 @@ class steam_APIM:
         for friendInfo in allFriends:
             if str(friendInfo["steamid"]) == str(userID2):
                 # Calls method to convert unix date to UTC
-                return self._unixToUTC(friendInfo["friend_since"])
+                return fromUnixToUTC(friendInfo["friend_since"])
         # Returns False by the below return statement if the user's aren't friends
         return False
 
