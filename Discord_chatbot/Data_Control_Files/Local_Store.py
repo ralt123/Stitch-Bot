@@ -21,6 +21,7 @@ class local_StorageM:
         self.detailsStored = ["ID", "steam_id", "favourite_streamers", "favourite_games", "favourite_genre", "tracked_game", "tracked_streamer", "blacklisted_streamers"]
         self.listDetails = ["favourite_streamers", "favourite_games", "blacklisted_streamers", "tracked_game", "tracked_streamer"]
         self.diDetailsStored = ["tracked_game", "tracked_streamer"]
+        self.mentionedSubjectDictionary = {}
         self.setCSVPath()
 
     # Sets the absolute path for the csv file
@@ -76,26 +77,29 @@ class local_StorageM:
 
     def checkIfChecked(self, objectID, objectType):
         """
-        Comment later - return True if already checked today, false otherwise
+        Checks if a provided tracked object has already been updated for the current day
 
-        :param objectID:
-        :param objectType:
-        :return:
+        :param objectID: int - ID of object
+        :param objectType: str - Tracked object type, "steam" or "twitch"
+        :return: Boolean - True if the object has been updated for the current day, False otherwise
         """
+        # Gets the unix value corresponding to the current date
         currentTime = time.time() // 86400
         if objectType == "steam":
+            # Retrieves the details stored regarding the provided object
             objectDetails = self.retrieveTrackedData(objectID, objectType)
             if objectDetails:
-                for recordedDay in objectDetails[1]:
-                    if recordedDay // 86400 == currentTime:
-                        return True
+                # Compares current date to previously updated date
+                if objectDetails[1][-1] // 86400 == currentTime:
+                    return True
         elif objectType == "twitch":
+            # Retrieves the details stored regarding the provided object
             objectDetails = self.retrieveTrackedData(objectID, objectType)
             if objectDetails:
-                for recordedDay in objectDetails[1]:
-                    if recordedDay // 86400 == currentTime:
-                        return True
-            return False
+                # Compares current date to previously updated date
+                if objectDetails[1][-1] // 86400 == currentTime:
+                    return True
+        return False
 
     def readUserDetails(self, userID):
         """
@@ -284,7 +288,7 @@ class local_StorageM:
                 writer.writerow(storeData)
 
     @staticmethod
-    def _unixToUTC(unixTime):
+    def unixToUTC(unixTime):
         """
         Used to convert unix time to UTC
 
@@ -487,13 +491,13 @@ class local_StorageM:
         # Run if the ID was already in the list of user details
         if heldData:
             storeData = heldData
-            currentDate = self._unixToUTC(time.time())[:3]
+            currentDate = self.unixToUTC(time.time())[:3]
             # List containing recorded dates
             previousDates = storeData[1].split(",")
             # List containing records view/player count on a given date
             previousDataCounts = storeData[2].split(",")
             # Variable containing last stored date
-            recordedDate = self._unixToUTC(int(previousDates[-1:][0]))[:3]
+            recordedDate = self.unixToUTC(int(previousDates[-1:][0]))[:3]
             # Checks if data for the current date was already stored
             if recordedDate == currentDate:
                 # Adjusts previously stored data
@@ -616,5 +620,41 @@ class local_StorageM:
 
         return heldData
 
+    def automaticPreferences(self, userID, subjectName, mentionedSubject):
+        """
+        Used to allow automatic preference setting.
+        If the same subject is mentioned 5 times, with each mentioning being less than an hour apart, that subject
+        is set as a preference for that user.
+
+        :param userID: int - Steam ID of user
+        :param subjectName: str - Type of subject being mentioned
+        :param mentionedSubject: str - Subject being mentioned
+        :return: boolean - True if the subject was set as a preference, False otherwise
+        """
+        # Gets the current time
+        currentTime = int(time.time())
+        # Checks if the user has any previously mentioned subjects stored
+        if userID in self.mentionedSubjectDictionary.keys():
+            # Checks if the mentioned subject was previously mentioned
+            if mentionedSubject in self.mentionedSubjectDictionary[userID].keys():
+                # Subject was last mentioned within an hour
+                if self.mentionedSubjectDictionary[userID][mentionedSubject + "Time"] + 3600 > currentTime:
+                    self.mentionedSubjectDictionary[userID][mentionedSubject] += 1
+                else:
+                    self.mentionedSubjectDictionary[userID][mentionedSubject] = 1
+                # Sets the time of which the subject was last mentioned
+                self.mentionedSubjectDictionary[userID][mentionedSubject + "Time"] = currentTime
+                # Subject was mentioned 5 times with less than an hour between each mentioning
+                if self.mentionedSubjectDictionary[userID][mentionedSubject] == 5:
+                    # Sets the mentioned subject as a preference
+                    self.writeUserDetails(userID, subjectName, mentionedSubject)
+                return True
+        # Adds the mentioned subject to the mentionedSubjectDictionary with the mentioning time
+        self.mentionedSubjectDictionary[userID] = {mentionedSubject: 1}
+        self.mentionedSubjectDictionary[userID][mentionedSubject + "Time"] = currentTime
+        return False
+
+
 # Creates object
 storageHandler = local_StorageM()
+

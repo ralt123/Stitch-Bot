@@ -7,7 +7,7 @@ from Discord_chatbot.Data_Control_Files.Twitch_API import twitchHandler
 
 def produceSingleGraph(ID, trackedType):
     """
-    Produces a single graph for a game/streamer and saves it as "botGraph.png"
+    Produces a single graph for a game/streamer and saves it as "images/botGraph.png"
 
     :param ID: int - ID of tracked game/streamer
     :param trackedType: str - either "twitch" or "steam" to indicate the platform of which the ID originates from
@@ -41,13 +41,13 @@ def produceSingleGraph(ID, trackedType):
     actualXAxis = []
     yAxis = []
     # Sets starting date for trend line
-    date = storageHandler._unixToUTC(storedData[1][0])[0:3]
+    date = storageHandler.unixToUTC(storedData[1][0])[0:3]
     date = str(date)[1:-1].replace(", ", "/")
     firstDate = date
 
     # Calculates the date stored and appends to necessary lists
     for i in range(len(storedData[1])):
-        date = storageHandler._unixToUTC(storedData[1][i])
+        date = storageHandler.unixToUTC(storedData[1][i])
         displayDate = str(date[0:2])[1:-1].replace(", ", "/")
         actualDate = str(date[0:3])[1:-1].replace(", ", "/")
         displayXAxis.append(displayDate)
@@ -86,14 +86,14 @@ def produceSingleGraph(ID, trackedType):
     # sets title
     plt.title(graphTitle)
 
-    # Saves the graph as "botGraph.png"
+    # Saves the graph as "botGraph.png" in the "images" folder
     plt.savefig('images/botGraph.png', bbox_inches='tight')
     return True
 
 
 def produceComparisonGraph(ID1, ID2, trackedType):
     """
-    Produces a graph for a comparison between 2 games/streamers and saves it as "botGraph.png"
+    Produces a graph for a comparison between 2 games/streamers and saves it as "images/botGraph.png"
     Compares days of which both IDs were tracked
 
     :param ID1: int - ID of first tracked game/streamer
@@ -105,13 +105,12 @@ def produceComparisonGraph(ID1, ID2, trackedType):
     plt.rcParams.update({'font.size': 10})
     plt.rcParams["font.family"] = "Times New Roman"
     plt.rcParams['axes.labelweight'] = 'bold'
-    # plt.style.use(['dark_background'])
 
     # Retrieves tracked data regarding provided IDs
     storedData1 = storageHandler.retrieveTrackedData(ID1, trackedType)
     storedData2 = storageHandler.retrieveTrackedData(ID2, trackedType)
     # returns False if there was no tracked data held for either provided ID
-    if not (storedData1 or storedData2):
+    if not storedData1 or not storedData2:
         return False
 
     # Sets title and labels
@@ -173,14 +172,14 @@ def produceComparisonGraph(ID1, ID2, trackedType):
     yAxis1 = []
     yAxis2 = []
     # Sets first date for trend lines
-    date = storageHandler._unixToUTC(storedData1[1][indexList1[0]])[0:3]
+    date = storageHandler.unixToUTC(storedData1[1][indexList1[0]])[0:3]
     date = str(date)[1:-1].replace(", ", "/")
     firstDate = date
 
     # Appends dates to lists, a last containing the actual time in UTC and another list containing
     # displayable time in UTC
     for currentIndex in indexList1:
-        date = storageHandler._unixToUTC(storedData1[1][currentIndex])
+        date = storageHandler.unixToUTC(storedData1[1][currentIndex])
         displayDate = str(date[0:2])[1:-1].replace(", ", "/")
         actualDate = str(date[0:3])[1:-1].replace(", ", "/")
         displayXAxis.append(displayDate)
@@ -225,7 +224,7 @@ def produceComparisonGraph(ID1, ID2, trackedType):
     # sets title
     plt.title(graphTitle)
 
-    # Saves the graph as "botGraph.png"
+    # Saves the graph as "botGraph.png" in the "images" folder
     plt.savefig('images/botGraph.png', bbox_inches='tight')
     return True
 

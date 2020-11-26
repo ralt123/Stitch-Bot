@@ -36,7 +36,7 @@ class steam_APIM:
         steam_key_path = os.path.join(filePath, "Encrypted_keys\Steam_key.txt")
         with open(steam_key_path, 'rb') as steam_key_file:
             encrypted_steam_key = steam_key_file.read()
-        self.__auth = encryption.decrypt(encrypted_steam_key)
+        self.__apiKey = encryption.decrypt(encrypted_steam_key)
 
         # old key import code:
         '''
