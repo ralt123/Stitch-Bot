@@ -570,7 +570,7 @@ def stream_details(streamers_name):
                     - Language: {details['language']}'''
 
     if clip:
-        return [desc, clip]
+        return  [f"{desc}\n{clip}", vod]
     return [desc]
 
 
