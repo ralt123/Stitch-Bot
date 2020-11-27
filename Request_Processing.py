@@ -33,12 +33,14 @@ availableFunctions = [[["undefined"], unknownRequest, 0, [], 1000],
                       [["stats", "csgo", "counter", "strike"], csgo_stats, 0, ["userID"], 74]]
 linkingVerbs = ["be", "for", "with"]
 
+
 def aliasesCheck(rawReference):
     if rawReference in steamAliases.keys():
         rawReference = steamAliases[rawReference]
     elif rawReference in twitchAliases.keys():
         rawReference = twitchAliases[rawReference]
     return rawReference
+
 
 def requestProcessing(userRequest, userID):
     argumentList = []
@@ -77,6 +79,7 @@ def requestProcessing(userRequest, userID):
             largestIndex = largestIndexList[0]
 
 
+
     referenceType = ""
     if {"stream", "streamer", "streamers"} & set(rawRequest):
         referenceType = "twitch"
@@ -86,6 +89,7 @@ def requestProcessing(userRequest, userID):
     for loopCounter in range(len(possibleFunctions[largestIndex][3])):
         if not argumentList and "userID" in possibleFunctions[largestIndex][3]:
             argumentList.append(userID)
+
         elif {"preference", "set", "delete", "remove"} & set(rawRequest):
             if {"steam", "id"} & set(rawRequest) == {"steam", "id"}:
                 steamIndex = rawRequest.index("steam")
@@ -116,6 +120,7 @@ def requestProcessing(userRequest, userID):
                     dividerIndex = rawRequest.index(possibleDivider)
                     break
 
+
             if indicatorIndex + 1 in [connectIndex]:
                 preferenceFirst = False
                 indicatorIndex += 1
@@ -130,14 +135,13 @@ def requestProcessing(userRequest, userID):
             for gameSectionIndex in range(connectIndex + 1, len(rawRequest)):
                 referencedObject += f"{originalRequest[gameSectionIndex]} "
 
+
             referencedObject = referencedObject[:-1]
             argumentList.append(referencedObject)
 
             if not preferenceFirst:
                 argumentList[1], argumentList[2] = argumentList[2], argumentList[1]
-            # ERROR EDECTION LATER
             argumentList[2] = argumentList[2].replace(" ", "_")
-            # TEMP
             if argumentList[2] in ["favourite_streamer", "favourite_game", "blacklisted_streamer"]:
                 argumentList[2] += "s"
             if argumentList[2] == "steamid":
@@ -176,27 +180,25 @@ def requestProcessing(userRequest, userID):
 
                 for possibleConnect in connectTuple:
                     if possibleConnect in rawRequest:
-                        indicatorIndex = rawRequest.index(possibleConnect)
+                        connectIndex = rawRequest.index(possibleConnect)
                         break
 
                 if str(indicatorIndex) and str(connectIndex):
                     referencedObject = ""
                     for gameSectionIndex in range(indicatorIndex + 1, connectIndex):
                         referencedObject += f"{originalRequest[gameSectionIndex]} "
-                    # ERROR EDECTION LATER
                     referencedObject = referencedObject[:-1]
+                    referencedObject = aliasesCheck(referencedObject)
                     argumentList.append(referencedObject)
 
                     referencedObject = ""
                     for gameSectionIndex in range(connectIndex + 1, len(rawRequest)):
                         referencedObject += f"{originalRequest[gameSectionIndex]} "
-                    # ERROR EDECTION LATER
                     referencedObject = referencedObject[:-1]
+                    referencedObject = aliasesCheck(referencedObject)
                     argumentList.append(referencedObject)
 
                     break
-                else:
-                    return unknownRequest()
             for verb in linkingVerbs:
                 if verb in rawRequest:
                     linkingVerb = rawRequest.index(verb)
