@@ -48,3 +48,25 @@ def fromUnixToUTC(unixTime):
     second = round((minute % 1) * 60)
     timeList = [int(day), int(month), int(year), int(hour), int(minute), second]
     return timeList
+
+def alphanumericString(rawString):
+    """
+    Used to alter a given string to only contain alphanumeric characters, lower case only.
+    Used to allow non-exact searches in an algorithm to return the desired result
+
+    :param rawString: str - String to be altered
+    :return: str - rawString but altered to only contain alphanumeric lowercase characters
+    """
+    # Changes string to prepare for comparison, most commands used are self explanatory
+    if rawString.isalnum():
+        preparedString = rawString.lower()
+    # Could check if the string is alphanumeric after removing a non-alphanumeric character but not necessary as
+    # only short strings will be used
+    else:
+        preparedString = ""
+        # Removes any non-alphanumeric characters
+        for character in rawString:
+            if character.isalnum():
+                preparedString += character
+        preparedString = preparedString.lower()
+    return preparedString

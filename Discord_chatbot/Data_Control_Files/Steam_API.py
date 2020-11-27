@@ -8,7 +8,7 @@ steamHandler.gamePlayerCount(730)
 
 import urllib.request, json, os
 from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
-from Discord_chatbot.Data_Control_Files.Unix_To_UTC import fromUnixToUTC
+from Discord_chatbot.Data_Control_Files.Reusable_Functions import fromUnixToUTC, alphanumericString
 from Encryption import encryptionAES128
 
 
@@ -93,7 +93,7 @@ class steam_APIM:
 
         # Converts names into their alphanumeric equivalent so they are easier for user to specify
         for i in range(0, len(unsortedGL)):
-            unsortedGL[i]["name"] = self.stringForComparison(unsortedGL[i]["name"])
+            unsortedGL[i]["name"] = alphanumericString(unsortedGL[i]["name"])
 
         # Sorts every pair to be in order
         for i in range(0, len(unsortedGL) - 1, 2):
@@ -173,7 +173,7 @@ class steam_APIM:
 
         searchingForIDs = True
         gameIDs = []
-        gameName = self.stringForComparison(gameName)
+        gameName = alphanumericString(gameName)
         # As some games have the same name, searching only concludes until all games of a given name are found
         while searchingForIDs:
             # Sets key variables such as the higher and lower index
@@ -184,7 +184,7 @@ class steam_APIM:
             # Repeats until the game is found within the list or until the entire list has been searched
             while lowerIndex <= higherIndex:
                 currentGameIndex = (higherIndex + lowerIndex) // 2
-                currentGameName = self.stringForComparison(gameListData[currentGameIndex]["name"])
+                currentGameName = alphanumericString(gameListData[currentGameIndex]["name"])
                 # Game has been found and the game's ID is returned
                 if currentGameName == gameName:
                     gameIDs.append(gameListData[currentGameIndex]["appid"])
@@ -386,29 +386,6 @@ class steam_APIM:
         else:
             return "nothing/private"
 
-    @staticmethod
-    def stringForComparison(rawString):
-        """
-        Used to alter a given string to only contain alphanumeric characters, lower case only.
-        Used to allow non-exact searches in an algorithm to return the desired result
-
-        :param rawString: str - String to be altered
-        :return: str - rawString but altered to only contain alphanumeric lowercase characters
-        """
-        # Changes string to prepare for comparison, most commands used are self explanatory
-        if rawString.isalnum():
-            preparedString = rawString.lower()
-        # Could check if the string is alphanumeric after removing a non-alphanumeric character but not necessary as
-        # only short strings will be used
-        else:
-            preparedString = ""
-            # Removes any non-alphanumeric characters
-            for character in rawString:
-                if character.isalnum():
-                    preparedString += character
-            preparedString = preparedString.lower()
-        return preparedString
-
     # Tried using a new implementation of discord of which I haven't used before
     # Uses recursion and efficiency could be improved however as I plan on only using
     # this method for relatively small lists of data, to save time, it should suffice
@@ -421,7 +398,7 @@ class steam_APIM:
         """
         # Implementation of quicksort
         # Key variables
-        pivot = self.stringForComparison(playingFriends[-1:][0][1])
+        pivot = alphanumericString(playingFriends[-1:][0][1])
         pivotData = playingFriends[-1:][0]
         toSort = playingFriends[:-1]
         marker1 = 0
@@ -432,7 +409,7 @@ class steam_APIM:
         while marker1 < marker2 - 1:
             if not marker1Stopped:
                 # Stops marker as an out of place element has been found
-                if self.stringForComparison(toSort[marker1][1]) > pivot:
+                if alphanumericString(toSort[marker1][1]) > pivot:
                     marker1Stopped = True
                 # Moves maker as the element was in place
                 else:
@@ -455,16 +432,16 @@ class steam_APIM:
                     marker2 -= 1
         # Ensures the element at marker2 is sorted as the previous while loop may end with unsorted data due to
         # marker1 being given priority
-        if self.stringForComparison(toSort[marker2][1]) < pivot:
+        if alphanumericString(toSort[marker2][1]) < pivot:
             toSort[marker1], toSort[marker2] = toSort[marker2], toSort[marker1]
         # If the element at marker1 is larger than the pivot, the pivot is below that element
-        if self.stringForComparison(toSort[marker1][1]) > pivot:
+        if alphanumericString(toSort[marker1][1]) > pivot:
             toSort.append(pivot)
             toSort[marker1], toSort[len(toSort) - 1] = toSort[len(toSort) - 1], toSort[marker1]
             lowerSection = toSort[0:marker1]
             higherSection = toSort[marker1 + 1:]
         # If the element at marker2 is larger than the pivot, the pivot is below that element
-        elif self.stringForComparison(toSort[marker2][1]) > pivot:
+        elif alphanumericString(toSort[marker2][1]) > pivot:
             toSort.append(pivot)
             toSort[marker2], toSort[len(toSort) - 1] = toSort[len(toSort) - 1], toSort[marker2]
             lowerSection = toSort[0:marker2]
@@ -559,7 +536,6 @@ class steam_APIM:
         if not userInfo:
             return False
         return userInfo["friendslist"]["friends"]
-
 
     def getFriendDate(self, userID1, userID2):
         """

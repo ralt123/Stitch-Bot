@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
 from Discord_chatbot.Data_Control_Files.Steam_API import steamHandler
 from Discord_chatbot.Data_Control_Files.Twitch_API import twitchHandler
-from Discord_chatbot.Data_Control_Files.Unix_To_UTC import fromUnixToUTC
+from Discord_chatbot.Data_Control_Files.Reusable_Functions import fromUnixToUTC
 
 def produceSingleGraph(ID, trackedType):
     """

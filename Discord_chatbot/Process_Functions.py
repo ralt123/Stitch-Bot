@@ -2,29 +2,9 @@ from Discord_chatbot.Data_Control_Files.Local_Store import storageHandler
 from Discord_chatbot.Data_Control_Files.Steam_API import steamHandler
 from Discord_chatbot.Data_Control_Files.Twitch_API import twitchHandler
 from Discord_chatbot.Data_Control_Files.Graph_Production import produceSingleGraph, produceComparisonGraph
+from Discord_chatbot.Data_Control_Files.Reusable_Functions import alphanumericString
 import random
 
-def alphanumericString(rawString):
-    """
-    Used to alter a given string to only contain alphanumeric characters, lower case only.
-    Used to allow non-exact searches in an algorithm to return the desired result
-
-    :param rawString: str - String to be altered
-    :return: str - rawString but altered to only contain alphanumeric lowercase characters
-    """
-    # Changes string to prepare for comparison, most commands used are self explanatory
-    if rawString.isalnum():
-        preparedString = rawString.lower()
-    # Could check if the string is alphanumeric after removing a non-alphanumeric character but not necessary as
-    # only short strings will be used
-    else:
-        preparedString = ""
-        # Removes any non-alphanumeric characters
-        for character in rawString:
-            if character.isalnum():
-                preparedString += character
-        preparedString = preparedString.lower()
-    return preparedString
 
 def validationOfID(objectID, objectType):
     """
@@ -73,6 +53,25 @@ def validationOfID(objectID, objectType):
     # Validation is complete and the ID of a whatever was provided is returned
     return objectID
 
+
+def numberFormatter(passedNumber):
+    """
+    Adds commas to a number to increase readability
+
+    :param passedNumber: int - Number to be adjusted
+    :return: str - passedNumber with commas every 1000th
+    """
+    refinedNumber = passedNumber
+    # Adds commas to the player count to allow the reader to more easily distinguish its value
+    if refinedNumber > 999:
+        refinedNumber = str(refinedNumber)
+        refinedNumberLen = len(refinedNumber)
+        refinedNumber = refinedNumber[:refinedNumberLen - 3] + "," + refinedNumber[refinedNumberLen - 3:]
+        if len(refinedNumber) > 7:
+            refinedNumber = refinedNumber[0] + "," + refinedNumber[1:]
+    return refinedNumber
+
+
 # I considered using threading here as to relieve the API bottle neck but this would make the code prone to error
 # due to the reading and writing of csv data. Safely implementing threading here will not be done due to time
 # constraints
@@ -116,7 +115,7 @@ def updateTracked():
 
 
 def getTopGames(userID=False):
-    # Required API went down for maintenance during creation. This function will be complete if the API comes back online.
+    # Required API went down for maintenance during creation. The function will not be complete in time.
     topGames = steamHandler.top10Games(userID)
     if not topGames:
         return "This function is currently unavailable as the required API is currently down, please try again later."
@@ -136,13 +135,7 @@ def currentGamePlayerCount(gameID):
     if str(gameID).isdigit():
         playerCount = steamHandler.gamePlayerCount(gameID)
         gameName = steamHandler.getGameName(gameID)
-        # Adds commas to the player count to allow the reader to more easily distinguish its value
-        if playerCount > 999:
-            playerCount = str(playerCount)
-            playerCountLen = len(playerCount)
-            playerCount = playerCount[:playerCountLen-3] + "," + playerCount[playerCountLen-3:]
-            if len(playerCount) > 7:
-                playerCount = playerCount[0] + "," + playerCount[1:]
+        playerCount = numberFormatter(playerCount)
         return f"{gameName} currently has {playerCount} players"
     return "Sorry, but I don't recognize that game"
 
@@ -153,11 +146,10 @@ def botInfo():
 
     :return: str - Bot's response
     """
-    return '''
-:information_source:**Info**
-```diff
-+ This is Stitch Bot ,It is an interactive Discord Bot that helps Gamers gain information about the games they love and the Streamers they watch. It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. 
-```'''
+    return ''':information_source:**Info** ```This is Stitch Bot, it is an interactive Discord Bot that helps gamers \
+    gain information about the games they love and the streamers they watch. 
+    It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can \
+    also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. ``` '''
 
 
 def botGreeting():
@@ -167,9 +159,10 @@ def botGreeting():
     :return: str - A random greeting
     """
     # List of possible greetings
-    possibleGreeting = ["Hi!", "Pleasure to meet you.", "Hello!", "Greetings", "Hello, what can I help you with?"]
+    possibleGreeting = ["Hi! :smile:", "Pleasure to meet you. :tophat:", "Hello! :wave:", "Greetings :ok_hand:",
+                        "Hello, what can I help you with? :mag_right:"]
     # Generates a random index to determine the greeting returned
-    randomIndex = random.randint(0, len(possibleGreeting)-1)
+    randomIndex = random.randint(0, len(possibleGreeting) - 1)
     return possibleGreeting[randomIndex]
 
 
@@ -181,12 +174,14 @@ def botCommands():
     :return: str - Suggestion of command to try
     """
     possibleIdeas = (
-        "tracking a streamer to get notified when they stream", "producing a graph of your favourite tracked game or streamer",
+        "tracking a streamer to get notified when they stream",
+        "producing a graph of your favourite tracked game or streamer",
         "producing a graph comparing your two favourite tracked games/streamers",
         "checking when you became friends with another user on steam", "checking the top streams for a specific game",
         "checking what games your friends are playing", "requesting the top clips for your favourite streamer")
     randomIndex = random.randint(0, len(possibleIdeas) - 1)
-    botResponse = "I can do many things! Tell me your preferences and I'll keep them in mind whilst talking to you! Why don't you try " + possibleIdeas[randomIndex] + "?"
+    botResponse = "I can do many things! Tell me your preferences and I'll keep them in mind whilst talking to you! Why don't you try " + \
+                  possibleIdeas[randomIndex] + "?"
     return botResponse
 
 
@@ -212,6 +207,10 @@ def friendsSince(userID, friendID):
     friendDate = steamHandler.getFriendDate(steamID, friendID)
     # Creates and returns string response
     if friendDate:
+        # Adds a "0" to the front of a single digit number
+        for i in range(len(friendDate)):
+            if len(str(friendDate[i])) < 2:
+                friendDate[i] = "0" + str(friendDate[i])
         responseString = f"You became friends at {friendDate[0]}/{friendDate[1]}/{friendDate[2]} {friendDate[3]}:{friendDate[4]}:{friendDate[5]}"
         return responseString
     return "Sorry, but you are either not friends with this user or this information is private"
@@ -239,8 +238,8 @@ def friendsPlaying(userID):
     listIndex = 0
     if len(friendsList) > 1:
         while listIndex < len(friendsList):
-            if friendsList[listIndex-1][-1:] == friendsList[listIndex][-1:]:
-                friendsList[listIndex-1].insert(1, friendsList[listIndex][0])
+            if friendsList[listIndex - 1][-1:] == friendsList[listIndex][-1:]:
+                friendsList[listIndex - 1].insert(1, friendsList[listIndex][0])
                 friendsList.pop(listIndex)
             else:
                 listIndex += 1
@@ -256,9 +255,9 @@ def friendsPlaying(userID):
         # Three or more people playing a specific game
         else:
             # Used to make use of commas for clarity and compactness
-            for i in range(0, len(friendInfo)-2):
-                returnString += friendInfo[i] +", "
-            returnString = f"{returnString[:-2]} and {friendInfo[i+1]} are playing {friendInfo[i+2]}, "
+            for i in range(0, len(friendInfo) - 2):
+                returnString += friendInfo[i] + ", "
+            returnString = f"{returnString[:-2]} and {friendInfo[i + 1]} are playing {friendInfo[i + 2]}, "
     return returnString[:-2]
 
 
@@ -341,9 +340,18 @@ def userFavouriteStreamersStreaming(userID):
     # Generates the string response
     returnString = ""
     for gameData in streamerList:
-        returnString += f"{gameData['user_name']} is streaming {gameData['game_name']}, "
+        returnString += f"`{gameData['user_name']}` is streaming {gameData['game_name']}, "
     returnString = returnString[:-2]
     return returnString
+
+
+# EDITTT
+def deletePreference(userID, preferenceID, preferenceType):
+    if preferenceType in storageHandler.detailsStored:
+        storageHandler.deleteUserDetails(userID, preferenceType, preferenceID)
+        # could chang eto say "that isn  a preference!"
+        return "Specified preference removed."
+    return "Unknown preference type :frowning:"
 
 
 def setPreference(userID, preferenceID, preferenceType):
@@ -360,6 +368,8 @@ def setPreference(userID, preferenceID, preferenceType):
         validationResponse = validationOfID(preferenceID, "steam_game")
     elif preferenceType in ["favourite_streamers", "tracked_streamer", "blacklisted_streamers"]:
         validationResponse = validationOfID(preferenceID, "twitch_user")
+    elif preferenceType in ["steam_id"]:
+        validationResponse = validationOfID(preferenceID, "steam_user")
     # Stores data of which cannot be validated (No API for all steam game genres available)
     elif preferenceType in ["favourite_genre"]:
         storageHandler.writeUserDetails(userID, preferenceType, preferenceID)
@@ -375,6 +385,9 @@ def setPreference(userID, preferenceID, preferenceType):
         preferenceData = steamHandler.getGameName(validationResponse)
     elif preferenceType in ["favourite_streamers", "tracked_streamer", "blacklisted_streamers"]:
         preferenceData = twitchHandler.getStreamerName(validationResponse)
+    elif preferenceType in ["steam_id"]:
+        storageHandler.writeUserDetails(userID, preferenceType, validationResponse)
+        return "Steam ID set"
     # Converts the string to only contain lowercase alphanumeric character
     preferenceData = alphanumericString(preferenceData)
     # Writes the user preference to storage
@@ -402,7 +415,7 @@ def generateSingleGraph(objectID, trackedType):
     # Produces the desired graph
     graphSuccess = produceSingleGraph(validationResponse, trackedType)
     if graphSuccess:
-        return True
+        return "Graph set"
     return "No tracked data is held for the given streamer/game."
 
 
@@ -431,7 +444,7 @@ def generateCompareGraph(objectID1, objectID2, trackedType):
     # Produces the desired graph
     graphSuccess = produceComparisonGraph(validationResponse1, validationResponse2, trackedType)
     if graphSuccess:
-        return True
+        return "Graph set"
     return "No tracked data is held for the given streamer/game."
 
 
@@ -451,7 +464,7 @@ def gameCurrentTopStreamers(userID, gameIdentifier):
     # Prepares and returns the string response
     returnString = ""
     for streamData in streamList:
-        returnString += f"{streamData[0]} streaming `{streamData[1]}` with {streamData[2]} viewers, "
+        returnString += f"{streamData[0]} streaming `{streamData[1]}` with {streamData[2]} viewers,\n"
     returnString = returnString[:-2]
     return returnString
 
@@ -473,7 +486,7 @@ def overallTopStreamerClips(streamerID):
     # Prepares and returns the string response
     returnString = "Top clips - "
     for clipData in topClips:
-        returnString += f"{clipData[1]} at {clipData[0]}, "
+        returnString += f"{clipData[1]} at {clipData[0]},\n"
     returnString = returnString[:-2]
     return returnString
 
@@ -492,11 +505,16 @@ def currentStreamDetails(streamerID):
     streamData = twitchHandler.streamDetails(streamerID)
     if not streamData:
         return "Provided streamer is not currently streaming."
+    streamData["viewer_count"] = numberFormatter(streamData["viewer_count"])
     return f"{streamData['user_name']} is currently streaming {streamData['game_name']} with {streamData['viewer_count']} viewers."
 
 
-def csgo_stats(steam_url):
-    steam_id = steamHandler.getUserSteamID(steam_url)
+def unknownRequest():
+    return "Sorry, but I don't understand"
+
+
+def csgo_stats(userID):
+    steam_id = storageHandler.readUserDetails(userID)[1]
     csgo_stats = steamHandler.getCSGOStats(steam_id)
     if not csgo_stats:
         desc = '**Couldn`t find stats**'
@@ -517,7 +535,7 @@ def csgo_stats(steam_url):
 
 
 def stream_details(streamers_name):
-    streamers_id = twitchHandler.getStreamerID(streamers_name.content)
+    streamers_id = validationOfID(streamers_name, "twitch_user")
 
     if not streamers_id:
         return 'Streamer not Found'
@@ -557,7 +575,7 @@ def stream_details(streamers_name):
 
 
 def game_details(game_name):
-    game_id = steamHandler.findGameID(game_name)
+    game_id = validationOfID(game_name, "steam_game")
     if not game_id:
         return 'Game not found'
 
@@ -594,7 +612,7 @@ def game_details(game_name):
     player_count = steamHandler.gamePlayerCount(game_id)
     game_desc = steamHandler.gameDescription(game_id)
     game_trailer = steamHandler.getGameTrailers(game_id)
-    desc = f'''** - {game_name.content}**
+    desc = f'''** - {game_name}**
                 - {game_cost}
                 - Player Count: {player_count}
                 - Game Description:\n {game_desc}
