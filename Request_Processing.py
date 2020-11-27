@@ -15,12 +15,12 @@ lem = WordNetLemmatizer()
 
 availableFunctions = [[["undefined"], unknownRequest, 0, [], 1000],
                       [["stream"], stream_details, 0, ["streamerID"], 400],
-                      [["stream", "clip"], overallTopStreamerClips, 0, ["streamerID"], 630],
+                      [["stream", "clip","clip"], overallTopStreamerClips, 0, ["streamerID"], 630],
                       [["top", "streamers", "play"], gameCurrentTopStreamers, 0,["userID", "gameIdentifier"], 300],
                       [["compare", "vs"], generateCompareGraph, 0, ["diObjectID", "diObjectID", "referenceType"], 50],
                       [["graph"], generateSingleGraph, 0, ["ObjectID", "referenceType"], 60],
                       [["set", "preference", "set", "set"], setPreference, 0, ["userID", "preferenceID", "preferenceType"], 10],
-                      [["delete", "remove"], deletePreference, 0, ["userID", "preferenceID", "preferenceType"], 9],
+                      [["delete", "delete", "remove", "remove"], deletePreference, 0, ["userID", "preferenceID", "preferenceType"], 9],
                       [["favourite", "stream"], userFavouriteStreamersStreaming, 0, ["userID"], 550],
                       [["game", "play"], checkUserPlayingGame, 0, ["steamID"], 490],
                       [["favourite", "game", "play"], currentPlayerCountFavouriteGames, 0, ["userID"], 510],
@@ -78,7 +78,7 @@ def requestProcessing(userRequest, userID):
 
 
     referenceType = ""
-    if {"stream", "streamer", "streamers"} in set(rawRequest):
+    if {"stream", "streamer", "streamers"} & set(rawRequest):
         referenceType = "twitch"
     else:
         referenceType = "steam"
@@ -135,7 +135,9 @@ def requestProcessing(userRequest, userID):
 
             if not preferenceFirst:
                 argumentList[1], argumentList[2] = argumentList[2], argumentList[1]
+            # ERROR EDECTION LATER
             argumentList[2] = argumentList[2].replace(" ", "_")
+            # TEMP
             if argumentList[2] in ["favourite_streamer", "favourite_game", "blacklisted_streamer"]:
                 argumentList[2] += "s"
             if argumentList[2] == "steamid":
@@ -181,12 +183,14 @@ def requestProcessing(userRequest, userID):
                     referencedObject = ""
                     for gameSectionIndex in range(indicatorIndex + 1, connectIndex):
                         referencedObject += f"{originalRequest[gameSectionIndex]} "
+                    # ERROR EDECTION LATER
                     referencedObject = referencedObject[:-1]
                     argumentList.append(referencedObject)
 
                     referencedObject = ""
                     for gameSectionIndex in range(connectIndex + 1, len(rawRequest)):
                         referencedObject += f"{originalRequest[gameSectionIndex]} "
+                    # ERROR EDECTION LATER
                     referencedObject = referencedObject[:-1]
                     argumentList.append(referencedObject)
 

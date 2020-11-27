@@ -145,9 +145,9 @@ def botInfo():
     :return: str - Bot's response
     """
     return [''':information_source:**Info** ```This is Stitch Bot, it is an interactive Discord Bot that helps gamers \
-    gain information about the games they love and the streamers they watch. 
+gain information about the games they love and the streamers they watch. 
     It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can \
-    also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. ``` ''']
+also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. ``` ''']
 
 
 def botGreeting():
@@ -289,7 +289,7 @@ def currentPlayerCountFavouriteGames(userID):
     # Produces the string response
     returnString = ""
     for gameData in gameList:
-        returnString += f"{gameData[0]} - {gameData[1]}, "
+        returnString += f"{gameData[0]} - {numberFormatter(gameData[1])}, "
     returnString = returnString[:-2]
     return [returnString]
 
@@ -317,7 +317,7 @@ def checkUserPlayingGame(steamID):
     # Steam player is not playing a game or their game activity is private
     if userInfo == "nothing/private":
         return ["The user is currently not playing a game or this information is private."]
-    return [userInfo]
+    return ["they are playing" + str(userInfo)]
 
 
 def userFavouriteStreamersStreaming(userID):
@@ -464,8 +464,8 @@ def gameCurrentTopStreamers(userID, gameIdentifier):
     # Prepares and returns the string response
     returnString = ""
     for streamData in streamList:
-        returnString += f"{streamData[0]} streaming `{streamData[1]}` with {streamData[2]} viewers,\n"
-    returnString = returnString[:-2]
+        returnString += f"{streamData[0]} streaming `{streamData[1]}` with {numberFormatter(streamData[2])} viewers,\n\n"
+    returnString = returnString[:-3]
     return [returnString]
 
 
@@ -486,8 +486,8 @@ def overallTopStreamerClips(streamerID):
     # Prepares and returns the string response
     returnString = "Top clips - "
     for clipData in topClips:
-        returnString += f"{clipData[1]} at {clipData[0]},\n"
-    returnString = returnString[:-2]
+        returnString += f"{clipData[1]} at {clipData[0]}\n"
+    returnString = returnString[:-1]
     return [returnString]
 
 
