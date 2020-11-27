@@ -43,6 +43,8 @@ def aliasesCheck(rawReference):
 
 
 def requestProcessing(userRequest, userID):
+    if userRequest[0] in ["!","#"]:
+        return ""
     argumentList = []
     possibleFunctions = copy.deepcopy(availableFunctions)
     rawRequest = userRequest.split(" ")

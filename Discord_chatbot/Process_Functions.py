@@ -415,7 +415,7 @@ def generateSingleGraph(objectID, trackedType):
     # Produces the desired graph
     graphSuccess = produceSingleGraph(validationResponse, trackedType)
     if graphSuccess:
-        return ["Graph set"]
+        return ["Graph set, use !graph to view your graph"]
     return ["No tracked data is held for the given streamer/game."]
 
 
@@ -444,7 +444,7 @@ def generateCompareGraph(objectID1, objectID2, trackedType):
     # Produces the desired graph
     graphSuccess = produceComparisonGraph(validationResponse1, validationResponse2, trackedType)
     if graphSuccess:
-        return ["Graph set"]
+        return ["Graph set, use !graph to view your graph"]
     return ["No tracked data is held for the given streamer/game."]
 
 
