@@ -317,7 +317,7 @@ def checkUserPlayingGame(steamID):
     # Steam player is not playing a game or their game activity is private
     if userInfo == "nothing/private":
         return ["The user is currently not playing a game or this information is private."]
-    return ["they are playing" + str(userInfo)]
+    return ["they are playing " + str(userInfo)]
 
 
 def userFavouriteStreamersStreaming(userID):
