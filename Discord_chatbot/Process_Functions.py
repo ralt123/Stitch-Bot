@@ -146,7 +146,7 @@ def botInfo():
     """
     return [''':information_source:**Info** ```This is Stitch Bot, it is an interactive Discord Bot that helps gamers \
 gain information about the games they love and the streamers they watch. 
-    It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can \
+It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can \
 also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. ``` ''']
 
 
@@ -615,3 +615,4 @@ def game_details(game_name):
                 - Game Description:\n {game_desc}
                 - Trailer:'''
     return [desc, game_trailer]
+
