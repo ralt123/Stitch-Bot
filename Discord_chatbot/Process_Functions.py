@@ -494,3 +494,110 @@ def currentStreamDetails(streamerID):
         return "Provided streamer is not currently streaming."
     return f"{streamData['user_name']} is currently streaming {streamData['game_name']} with {streamData['viewer_count']} viewers."
 
+
+def csgo_stats(steam_url):
+    steam_id = steamHandler.getUserSteamID(steam_url)
+    csgo_stats = steamHandler.getCSGOStats(steam_id)
+    if not csgo_stats:
+        desc = '**Couldn`t find stats**'
+    else:
+        if type(csgo_stats['total_time_played']) == bool:
+            hours = 'unknown'
+        else:
+            hours = int(csgo_stats['total_time_played']) // 3600
+        desc = (f'''':first_place:** - CSGO Stats**
+                    - Total Kills: {csgo_stats['total_kills']}
+                    - Total Headshots: {csgo_stats['total_kills_headshot']}
+                    - Total Damage: {csgo_stats['total_damage_done']}
+                    - Total Deaths: {csgo_stats['total_deaths']}
+                    - Total Wins: {csgo_stats['total_wins']}
+                    - Total PlayTime in Match {hours}hrs 
+                    ''')
+    return desc
+
+
+def stream_details(streamers_name):
+    streamers_id = twitchHandler.getStreamerID(streamers_name.content)
+
+    if not streamers_id:
+        return 'Streamer not Found'
+
+    stream_checker = twitchHandler.checkIfStreaming(streamers_id)
+    if not stream_checker:
+        desc = '''
+    **:white_circle:{streamers_name.content}**
+    **They are not live right now**:sob:'''
+
+    else:
+        details = twitchHandler.streamDetails(streamers_id)
+        vod = twitchHandler.latestStreamerClips(streamers_id)
+        if not vod:
+            clip = ''
+            vod = ''
+        else:
+            clip = '+ Popular clip from the stream:'
+
+        def live_emoji():
+            if details['type'] == 'live':
+                return ':red_circle:'
+            else:
+                return ''
+
+        live = live_emoji()
+
+        desc = f'''**{live + details['user_name']}**
+                    - {details['type']}
+                    - Title: {details['title']}
+                    - Viewers: {details['viewer_count']}
+                    - Started at: {details['started_at']}
+                    - Language: {details['language']}
+                    {clip}'''
+
+    return desc
+
+
+def game_details(game_name):
+    game_id = steamHandler.findGameID(game_name)
+    if not game_id:
+        return 'Game not found'
+
+    def game_price_calc(id):
+        price_dict = steamHandler.getGamePrice(id)
+        if price_dict['free']:
+            normal_price = 0
+            current_price = 0
+            money_saved = 0
+            sale = False
+        elif price_dict['normal_price'] == '':
+            normal_price = 0
+            current_price = price_dict['current_price']
+            money_saved = 0
+            sale = False
+        else:
+            current_price = price_dict['current_price']
+            normal_price = price_dict['normal_price']
+            sale = True
+            x = float(price_dict['normal_price'][1:])
+            y = float(price_dict['current_price'][1:])
+            z = price_dict['current_price'][:1]
+            money_saved = f'{z}{x - y}'
+        return normal_price, current_price, money_saved, sale
+
+    normal_price, current_price, money_saved, sale = game_price_calc(game_id)
+
+    if normal_price == 0 and current_price == 0 and money_saved == 0:
+        game_cost = 'Free'
+    elif sale:
+        game_cost = f'Sale Price: {current_price}\n{money_saved} Off!'
+    else:
+        game_cost = f'Price: {current_price}'
+    player_count = steamHandler.gamePlayerCount(game_id)
+    game_desc = steamHandler.gameDescription(game_id)
+    game_trailer = steamHandler.getGameTrailers(game_id)
+    desc = f'''** - {game_name.content}**
+                - {game_cost}
+                - Player Count: {player_count}
+                - Game Description:\n {game_desc}
+                - Trailer:
+                {game_trailer}'''
+    return desc
