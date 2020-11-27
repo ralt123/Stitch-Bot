@@ -1,14 +1,14 @@
-from Discord_chatbot.Data_Control_Files.Process_Functions import *
+from Discord_chatbot.Process_Functions import *
 from Discord_chatbot.Data_Control_Files.Reusable_Functions import alphanumericString
 from nltk.stem import WordNetLemmatizer
 import copy, json, os
 
 
 filePath = os.path.dirname(__file__)
-gameAliasesPath = os.path.join(filePath, "game_aliases.json")
+gameAliasesPath = os.path.join(filePath, "Discord_chatbot/Data_Control_Files/game_aliases.json")
 with open(gameAliasesPath, "r") as jsonFile:
     steamAliases = json.load(jsonFile)["aliases"][0]
-twitchAliasesPath = os.path.join(filePath, "twitch_aliases.json")
+twitchAliasesPath = os.path.join(filePath, "Discord_chatbot/Data_Control_Files/twitch_aliases.json")
 with open(twitchAliasesPath, "r") as jsonFile:
     twitchAliases = json.load(jsonFile)["aliases"][0]
 lem = WordNetLemmatizer()
