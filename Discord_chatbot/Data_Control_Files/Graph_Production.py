@@ -29,9 +29,8 @@ def produceSingleGraph(ID, trackedType):
         graphTitle = f"{graphLabel} Player Count"
         yAxisLabel = "Player Count"
     else:
-        graphTitle = twitchHandler.getStreamerName(ID)
+        graphTitle = twitchHandler.getStreamerName(ID).capitalize()
         graphLabel = graphTitle
-        graphTitle[0] = graphTitle[0].upper() + graphTitle[1:]
         graphTitle += " Viewer Count"
         yAxisLabel = "View Count"
 
@@ -120,10 +119,8 @@ def produceComparisonGraph(ID1, ID2, trackedType):
         graphTitle = f"{graphLabel1} vs {graphLabel2} Player Count"
         yAxisLabel = "Player Count"
     else:
-        graphLabel1 = twitchHandler.getStreamerName(ID1)
-        graphLabel2 = twitchHandler.getStreamerName(ID2)
-        graphLabel1 = graphLabel1[0].upper() + graphLabel1[1:]
-        graphLabel2 = graphLabel2[0].upper() + graphLabel2[1:]
+        graphLabel1 = twitchHandler.getStreamerName(ID1).capitalize()
+        graphLabel2 = twitchHandler.getStreamerName(ID2).capitalize()
         graphTitle = f"{graphLabel1} vs {graphLabel2} Viewer Count"
         graphTitle += " Viewer Count"
         yAxisLabel = "View Count"
@@ -145,10 +142,10 @@ def produceComparisonGraph(ID1, ID2, trackedType):
         if currentIndex1 >= len(storedData1[1]) or currentIndex2 >= len(storedData2[2]):
             break
         if not haltIndex1:
-            dateData1 = int(storedData1[1][currentIndex1]) % 86400
+            dateData1 = int(storedData1[1][currentIndex1]) // 86400
             currentIndex1 += 1
         if not haltIndex2:
-            dateData2 = int(storedData2[1][currentIndex2]) % 86400
+            dateData2 = int(storedData2[1][currentIndex2]) // 86400
             currentIndex2 += 1
         # dates are the same so their indexes are appended to a list
         if dateData1 == dateData2:
