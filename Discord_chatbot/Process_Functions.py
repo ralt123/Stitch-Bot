@@ -555,9 +555,9 @@ def stream_details(streamers_name):
 
         def live_emoji():
             if details['type'] == 'live':
-                return [':red_circle:']
+                return ':red_circle:'
             else:
-                return ['']
+                return ''
 
         live = live_emoji()
 
