@@ -534,6 +534,7 @@ def csgo_stats(userID):
 
 def stream_details(streamers_name):
     streamers_id = validationOfID(streamers_name, "twitch_user")
+    clip = False
 
     if not streamers_id:
         return ['Streamer not Found']
@@ -568,7 +569,9 @@ def stream_details(streamers_name):
                     - Started at: {details['started_at']}
                     - Language: {details['language']}'''
 
-    return [desc, clip]
+    if clip:
+        return [desc, clip]
+    return [desc]
 
 
 def game_details(game_name):
