@@ -53,7 +53,6 @@ def validationOfID(objectID, objectType):
     # Validation is complete and the ID of a whatever was provided is returned
     return objectID
 
-
 def numberFormatter(passedNumber):
     """
     Adds commas to a number to increase readability
@@ -70,7 +69,6 @@ def numberFormatter(passedNumber):
         if len(refinedNumber) > 7:
             refinedNumber = refinedNumber[0] + "," + refinedNumber[1:]
     return refinedNumber
-
 
 # I considered using threading here as to relieve the API bottle neck but this would make the code prone to error
 # due to the reading and writing of csv data. Safely implementing threading here will not be done due to time
@@ -118,7 +116,7 @@ def getTopGames(userID=False):
     # Required API went down for maintenance during creation. The function will not be complete in time.
     topGames = steamHandler.top10Games(userID)
     if not topGames:
-        return "This function is currently unavailable as the required API is currently down, please try again later."
+        return ["This function is currently unavailable as the required API is currently down, please try again later."]
     return topGames
 
 
@@ -136,8 +134,8 @@ def currentGamePlayerCount(gameID):
         playerCount = steamHandler.gamePlayerCount(gameID)
         gameName = steamHandler.getGameName(gameID)
         playerCount = numberFormatter(playerCount)
-        return f"{gameName} currently has {playerCount} players"
-    return "Sorry, but I don't recognize that game"
+        return [f"{gameName} currently has {playerCount} players"]
+    return ["Sorry, but I don't recognize that game"]
 
 
 def botInfo():
@@ -146,10 +144,10 @@ def botInfo():
 
     :return: str - Bot's response
     """
-    return ''':information_source:**Info** ```This is Stitch Bot, it is an interactive Discord Bot that helps gamers \
-    gain information about the games they love and the streamers they watch. 
+    return [''':information_source:**Info** ```This is Stitch Bot, it is an interactive Discord Bot that helps gamers \
+gain information about the games they love and the streamers they watch. 
     It can help you find the most popular game to play and tell you when your favourite streamer is Streaming. It can \
-    also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. ``` '''
+also help with your usual basic commands like Kick and Ban. Use !commands to see the full capabilities of Stitch Bot. ``` ''']
 
 
 def botGreeting():
@@ -159,11 +157,10 @@ def botGreeting():
     :return: str - A random greeting
     """
     # List of possible greetings
-    possibleGreeting = ["Hi! :smile:", "Pleasure to meet you. :tophat:", "Hello! :wave:", "Greetings :ok_hand:",
-                        "Hello, what can I help you with? :mag_right:"]
+    possibleGreeting = ["Hi! :smile:", "Pleasure to meet you. :tophat:", "Hello! :wave:", "Greetings :ok_hand:", "Hello, what can I help you with? :mag_right:"]
     # Generates a random index to determine the greeting returned
-    randomIndex = random.randint(0, len(possibleGreeting) - 1)
-    return possibleGreeting[randomIndex]
+    randomIndex = random.randint(0, len(possibleGreeting)-1)
+    return [possibleGreeting[randomIndex]]
 
 
 def botCommands():
@@ -174,15 +171,13 @@ def botCommands():
     :return: str - Suggestion of command to try
     """
     possibleIdeas = (
-        "tracking a streamer to get notified when they stream",
-        "producing a graph of your favourite tracked game or streamer",
+        "tracking a streamer to get notified when they stream", "producing a graph of your favourite tracked game or streamer",
         "producing a graph comparing your two favourite tracked games/streamers",
         "checking when you became friends with another user on steam", "checking the top streams for a specific game",
         "checking what games your friends are playing", "requesting the top clips for your favourite streamer")
     randomIndex = random.randint(0, len(possibleIdeas) - 1)
-    botResponse = "I can do many things! Tell me your preferences and I'll keep them in mind whilst talking to you! Why don't you try " + \
-                  possibleIdeas[randomIndex] + "?"
-    return botResponse
+    botResponse = "I can do many things! Tell me your preferences and I'll keep them in mind whilst talking to you! Why don't you try " + possibleIdeas[randomIndex] + "?"
+    return [botResponse]
 
 
 def friendsSince(userID, friendID):
@@ -197,7 +192,7 @@ def friendsSince(userID, friendID):
     userID = storageHandler.readUserDetails(userID)
     # User's steam ID has not been recorded
     if not userID or not userID[1]:
-        return "Please inform me of your steam vanity ID or steamID64 so I can fulfil your request"
+        return ["Please inform me of your steam vanity ID or steamID64 so I can fulfil your request"]
     # Extracts the user's steam ID
     steamID = userID[1]
     # friend ID is the friends vanity ID of which must be used to retrieve their actual steam ID
@@ -212,8 +207,8 @@ def friendsSince(userID, friendID):
             if len(str(friendDate[i])) < 2:
                 friendDate[i] = "0" + str(friendDate[i])
         responseString = f"You became friends at {friendDate[0]}/{friendDate[1]}/{friendDate[2]} {friendDate[3]}:{friendDate[4]}:{friendDate[5]}"
-        return responseString
-    return "Sorry, but you are either not friends with this user or this information is private"
+        return [responseString]
+    return ["Sorry, but you are either not friends with this user or this information is private"]
 
 
 def friendsPlaying(userID):
@@ -227,19 +222,19 @@ def friendsPlaying(userID):
     userID = storageHandler.readUserDetails(userID)
     # User's steam ID is not held in local storage
     if not userID or not userID[1]:
-        return "Please inform me of your steam vanity ID or steamID64 so I can fulfil your request"
+        return ["Please inform me of your steam vanity ID or steamID64 so I can fulfil your request"]
     userID = userID[1]
     # Retrieves details regarding the user's friends of which are currently playing a game
     friendsList = steamHandler.friendsPlayingGame(userID)
     # No friends of the user are currently playing a game or their friends are hidden
     if not friendsList:
-        return "None of your friends are playing a game or your friends are hidden"
+        return ["None of your friends are playing a game or your friends are hidden"]
     # Combines players playing the same game into the same list for processing
     listIndex = 0
     if len(friendsList) > 1:
         while listIndex < len(friendsList):
-            if friendsList[listIndex - 1][-1:] == friendsList[listIndex][-1:]:
-                friendsList[listIndex - 1].insert(1, friendsList[listIndex][0])
+            if friendsList[listIndex-1][-1:] == friendsList[listIndex][-1:]:
+                friendsList[listIndex-1].insert(1, friendsList[listIndex][0])
                 friendsList.pop(listIndex)
             else:
                 listIndex += 1
@@ -255,10 +250,10 @@ def friendsPlaying(userID):
         # Three or more people playing a specific game
         else:
             # Used to make use of commas for clarity and compactness
-            for i in range(0, len(friendInfo) - 2):
-                returnString += friendInfo[i] + ", "
-            returnString = f"{returnString[:-2]} and {friendInfo[i + 1]} are playing {friendInfo[i + 2]}, "
-    return returnString[:-2]
+            for i in range(0, len(friendInfo)-2):
+                returnString += friendInfo[i] +", "
+            returnString = f"{returnString[:-2]} and {friendInfo[i+1]} are playing {friendInfo[i+2]}, "
+    return[ returnString[:-2]]
 
 
 def setSteamID(userID, steamID):
@@ -273,10 +268,10 @@ def setSteamID(userID, steamID):
     validationResponse = validationOfID(steamID, "steam_user")
     # Provided ID was invalid, returns error message
     if not str(validationResponse).isdigit():
-        return validationResponse
+        return [validationResponse]
     # Writes new steam ID to local storage
     storageHandler.writeUserDetails(userID, "steam_id", validationResponse)
-    return "Steam ID set"
+    return ["Steam ID set"]
 
 
 def currentPlayerCountFavouriteGames(userID):
@@ -290,13 +285,13 @@ def currentPlayerCountFavouriteGames(userID):
     gameList = steamHandler.playerCountFavouriteGames(userID)
     # User has no favourite games set
     if not gameList:
-        return "You don't have any favourite games set yet!"
+        return[ "You don't have any favourite games set yet!"]
     # Produces the string response
     returnString = ""
     for gameData in gameList:
-        returnString += f"{gameData[0]} - {gameData[1]}, "
+        returnString += f"{gameData[0]} - {numberFormatter(gameData[1])}, "
     returnString = returnString[:-2]
-    return returnString
+    return [returnString]
 
 
 def checkUserPlayingGame(steamID):
@@ -310,19 +305,19 @@ def checkUserPlayingGame(steamID):
     if not str(steamID).isdigit():
         steamID = steamHandler.getUserSteamID(steamID)
         if not steamID:
-            return "Invalid vanity ID provided"
+            return ["Invalid vanity ID provided"]
     # Provided ID is either a vanity ID or a steamID64
     else:
         if not steamHandler.validateID(steamID):
             steamID = steamHandler.getUserSteamID(steamID)
             if not steamID:
-                return "Invalid vanity ID/steamID64 provided"
+                return ["Invalid vanity ID/steamID64 provided"]
     # Attempts to retrieves the name of the game the user is playing
     userInfo = steamHandler.checkPlayingGame(steamID)
     # Steam player is not playing a game or their game activity is private
     if userInfo == "nothing/private":
-        return "The user is currently not playing a game or this information is private."
-    return userInfo
+        return ["The user is currently not playing a game or this information is private."]
+    return ["they are playing" + str(userInfo)]
 
 
 def userFavouriteStreamersStreaming(userID):
@@ -336,23 +331,28 @@ def userFavouriteStreamersStreaming(userID):
     streamerList = twitchHandler.favouriteStreamersStreaming(userID)
     # None of the user's favourite streamers are streaming
     if not streamerList:
-        return "None of your favourited streamers are currently streaming."
+        return ["None of your favourited streamers are currently streaming."]
     # Generates the string response
     returnString = ""
     for gameData in streamerList:
         returnString += f"`{gameData['user_name']}` is streaming {gameData['game_name']}, "
     returnString = returnString[:-2]
-    return returnString
+    return [returnString]
 
-
-# EDITTT
 def deletePreference(userID, preferenceID, preferenceType):
+    """
+    Deletes the specified preference from local storage for the requesting user.
+
+    :param userID: int - Discord ID of user
+    :param preferenceID: str - ID for the data to be deleted
+    :param preferenceType: str - Name of preference to be deleted
+    :return: str - Error or success message response to the user
+    """
+
     if preferenceType in storageHandler.detailsStored:
         storageHandler.deleteUserDetails(userID, preferenceType, preferenceID)
-        # could chang eto say "that isn  a preference!"
-        return "Specified preference removed."
-    return "Unknown preference type :frowning:"
-
+        return ["Specified preference removed."]
+    return ["Unknown preference type :frowning:"]
 
 def setPreference(userID, preferenceID, preferenceType):
     """
@@ -373,7 +373,7 @@ def setPreference(userID, preferenceID, preferenceType):
     # Stores data of which cannot be validated (No API for all steam game genres available)
     elif preferenceType in ["favourite_genre"]:
         storageHandler.writeUserDetails(userID, preferenceType, preferenceID)
-        return "Preference set successfully!"
+        return ["Preference set successfully!"]
     # Raise an error to inform a fellow programmer using the function of their invalid arguments passed
     else:
         raise Exception("You must pass a valid 'preferenceType', please refer to documentation")
@@ -387,12 +387,12 @@ def setPreference(userID, preferenceID, preferenceType):
         preferenceData = twitchHandler.getStreamerName(validationResponse)
     elif preferenceType in ["steam_id"]:
         storageHandler.writeUserDetails(userID, preferenceType, validationResponse)
-        return "Steam ID set"
+        return ["Steam ID set"]
     # Converts the string to only contain lowercase alphanumeric character
     preferenceData = alphanumericString(preferenceData)
     # Writes the user preference to storage
     storageHandler.writeUserDetails(userID, preferenceType, preferenceData)
-    return "Preference set successfully!"
+    return ["Preference set successfully!"]
 
 
 def generateSingleGraph(objectID, trackedType):
@@ -411,12 +411,12 @@ def generateSingleGraph(objectID, trackedType):
         validationResponse = validationOfID(objectID, "twitch_user")
     # Validation failed and the error message from validation is returned
     if not str(validationResponse).isdigit():
-        return validationResponse
+        return [validationResponse]
     # Produces the desired graph
     graphSuccess = produceSingleGraph(validationResponse, trackedType)
     if graphSuccess:
-        return "Graph set"
-    return "No tracked data is held for the given streamer/game."
+        return ["Graph set"]
+    return ["No tracked data is held for the given streamer/game."]
 
 
 def generateCompareGraph(objectID1, objectID2, trackedType):
@@ -444,8 +444,8 @@ def generateCompareGraph(objectID1, objectID2, trackedType):
     # Produces the desired graph
     graphSuccess = produceComparisonGraph(validationResponse1, validationResponse2, trackedType)
     if graphSuccess:
-        return "Graph set"
-    return "No tracked data is held for the given streamer/game."
+        return ["Graph set"]
+    return ["No tracked data is held for the given streamer/game."]
 
 
 def gameCurrentTopStreamers(userID, gameIdentifier):
@@ -460,13 +460,13 @@ def gameCurrentTopStreamers(userID, gameIdentifier):
     # Retrieves a list of the top 5 english non-blacklisted streamers playing the game specified
     streamList = twitchHandler.gameTopStreamers(userID, gameIdentifier)
     if not streamList:
-        return "Invalid category/game."
+        return ["Invalid category/game."]
     # Prepares and returns the string response
     returnString = ""
     for streamData in streamList:
-        returnString += f"{streamData[0]} streaming `{streamData[1]}` with {streamData[2]} viewers,\n"
-    returnString = returnString[:-2]
-    return returnString
+        returnString += f"{streamData[0]} streaming `{streamData[1]}` with {numberFormatter(streamData[2])} viewers,\n\n"
+    returnString = returnString[:-3]
+    return [returnString]
 
 
 def overallTopStreamerClips(streamerID):
@@ -482,13 +482,13 @@ def overallTopStreamerClips(streamerID):
     # Retrieves the streamers top 5 clips
     topClips = twitchHandler.topStreamerClips(streamerID)
     if not topClips:
-        return "Invalid twitch streamer provided."
+        return ["Invalid twitch streamer provided."]
     # Prepares and returns the string response
     returnString = "Top clips - "
     for clipData in topClips:
-        returnString += f"{clipData[1]} at {clipData[0]},\n"
-    returnString = returnString[:-2]
-    return returnString
+        returnString += f"{clipData[1]} at {clipData[0]}\n"
+    returnString = returnString[:-1]
+    return [returnString]
 
 
 def currentStreamDetails(streamerID):
@@ -504,14 +504,12 @@ def currentStreamDetails(streamerID):
     # Retrieves the required stream data
     streamData = twitchHandler.streamDetails(streamerID)
     if not streamData:
-        return "Provided streamer is not currently streaming."
+        return ["Provided streamer is not currently streaming."]
     streamData["viewer_count"] = numberFormatter(streamData["viewer_count"])
-    return f"{streamData['user_name']} is currently streaming {streamData['game_name']} with {streamData['viewer_count']} viewers."
-
+    return [f"{streamData['user_name']} is currently streaming {streamData['game_name']} with {streamData['viewer_count']} viewers."]
 
 def unknownRequest():
-    return "Sorry, but I don't understand"
-
+    return ["Sorry, but I don't understand"]
 
 def csgo_stats(userID):
     steam_id = storageHandler.readUserDetails(userID)[1]
@@ -531,14 +529,14 @@ def csgo_stats(userID):
                     - Total Wins: {csgo_stats['total_wins']}
                     - Total PlayTime in Match {hours}hrs 
                     ''')
-    return desc
+    return [desc]
 
 
 def stream_details(streamers_name):
     streamers_id = validationOfID(streamers_name, "twitch_user")
 
     if not streamers_id:
-        return 'Streamer not Found'
+        return ['Streamer not Found']
 
     stream_checker = twitchHandler.checkIfStreaming(streamers_id)
     if not stream_checker:
@@ -568,16 +566,15 @@ def stream_details(streamers_name):
                     - Title: {details['title']}
                     - Viewers: {details['viewer_count']}
                     - Started at: {details['started_at']}
-                    - Language: {details['language']}
-                    {clip}'''
+                    - Language: {details['language']}'''
 
-    return desc
+    return [desc, clip]
 
 
 def game_details(game_name):
     game_id = validationOfID(game_name, "steam_game")
     if not game_id:
-        return 'Game not found'
+        return ['Game not found']
 
     def game_price_calc(id):
         price_dict = steamHandler.getGamePrice(id)
@@ -616,6 +613,5 @@ def game_details(game_name):
                 - {game_cost}
                 - Player Count: {player_count}
                 - Game Description:\n {game_desc}
-                - Trailer:
-                {game_trailer}'''
-    return desc
+                - Trailer:'''
+    return [desc, game_trailer]

@@ -15,12 +15,12 @@ lem = WordNetLemmatizer()
 
 availableFunctions = [[["undefined"], unknownRequest, 0, [], 1000],
                       [["stream"], stream_details, 0, ["streamerID"], 400],
-                      [["stream", "clip"], overallTopStreamerClips, 0, ["streamerID"], 630],
+                      [["stream", "clip","clip"], overallTopStreamerClips, 0, ["streamerID"], 630],
                       [["top", "streamers", "play"], gameCurrentTopStreamers, 0,["userID", "gameIdentifier"], 300],
                       [["compare", "vs"], generateCompareGraph, 0, ["diObjectID", "diObjectID", "referenceType"], 50],
                       [["graph"], generateSingleGraph, 0, ["ObjectID", "referenceType"], 60],
                       [["set", "preference", "set", "set"], setPreference, 0, ["userID", "preferenceID", "preferenceType"], 10],
-                      [["delete", "remove"], deletePreference, 0, ["userID", "preferenceID", "preferenceType"], 9],
+                      [["delete", "delete", "remove", "remove"], deletePreference, 0, ["userID", "preferenceID", "preferenceType"], 9],
                       [["favourite", "stream"], userFavouriteStreamersStreaming, 0, ["userID"], 550],
                       [["game", "play"], checkUserPlayingGame, 0, ["steamID"], 490],
                       [["favourite", "game", "play"], currentPlayerCountFavouriteGames, 0, ["userID"], 510],
@@ -33,12 +33,14 @@ availableFunctions = [[["undefined"], unknownRequest, 0, [], 1000],
                       [["stats", "csgo", "counter", "strike"], csgo_stats, 0, ["userID"], 74]]
 linkingVerbs = ["be", "for", "with"]
 
+
 def aliasesCheck(rawReference):
     if rawReference in steamAliases.keys():
         rawReference = steamAliases[rawReference]
     elif rawReference in twitchAliases.keys():
         rawReference = twitchAliases[rawReference]
     return rawReference
+
 
 def requestProcessing(userRequest, userID):
     argumentList = []
@@ -77,8 +79,9 @@ def requestProcessing(userRequest, userID):
             largestIndex = largestIndexList[0]
 
 
+
     referenceType = ""
-    if {"stream", "streamer", "streamers"} in set(rawRequest):
+    if {"stream", "streamer", "streamers"} & set(rawRequest):
         referenceType = "twitch"
     else:
         referenceType = "steam"
@@ -86,6 +89,7 @@ def requestProcessing(userRequest, userID):
     for loopCounter in range(len(possibleFunctions[largestIndex][3])):
         if not argumentList and "userID" in possibleFunctions[largestIndex][3]:
             argumentList.append(userID)
+
         elif {"preference", "set", "delete", "remove"} & set(rawRequest):
             if {"steam", "id"} & set(rawRequest) == {"steam", "id"}:
                 steamIndex = rawRequest.index("steam")
@@ -116,6 +120,7 @@ def requestProcessing(userRequest, userID):
                     dividerIndex = rawRequest.index(possibleDivider)
                     break
 
+
             if indicatorIndex + 1 in [connectIndex]:
                 preferenceFirst = False
                 indicatorIndex += 1
@@ -129,6 +134,7 @@ def requestProcessing(userRequest, userID):
             referencedObject = ""
             for gameSectionIndex in range(connectIndex + 1, len(rawRequest)):
                 referencedObject += f"{originalRequest[gameSectionIndex]} "
+
 
             referencedObject = referencedObject[:-1]
             argumentList.append(referencedObject)
@@ -174,7 +180,7 @@ def requestProcessing(userRequest, userID):
 
                 for possibleConnect in connectTuple:
                     if possibleConnect in rawRequest:
-                        indicatorIndex = rawRequest.index(possibleConnect)
+                        connectIndex = rawRequest.index(possibleConnect)
                         break
 
                 if str(indicatorIndex) and str(connectIndex):
@@ -182,17 +188,17 @@ def requestProcessing(userRequest, userID):
                     for gameSectionIndex in range(indicatorIndex + 1, connectIndex):
                         referencedObject += f"{originalRequest[gameSectionIndex]} "
                     referencedObject = referencedObject[:-1]
+                    referencedObject = aliasesCheck(referencedObject)
                     argumentList.append(referencedObject)
 
                     referencedObject = ""
                     for gameSectionIndex in range(connectIndex + 1, len(rawRequest)):
                         referencedObject += f"{originalRequest[gameSectionIndex]} "
                     referencedObject = referencedObject[:-1]
+                    referencedObject = aliasesCheck(referencedObject)
                     argumentList.append(referencedObject)
 
                     break
-                else:
-                    return unknownRequest()
             for verb in linkingVerbs:
                 if verb in rawRequest:
                     linkingVerb = rawRequest.index(verb)
