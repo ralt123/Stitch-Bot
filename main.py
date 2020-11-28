@@ -2,13 +2,13 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions, check
-from discord import Embed, Color
+from discord import Embed, Color, File
 from Discord_chatbot.Data_Control_Files.Steam_API import *
 from Discord_chatbot.Data_Control_Files.Twitch_API import *
 from Discord_chatbot.Data_Control_Files.Local_Store import *
 import asyncio
 from Encryption import encryptionAES128
-from Bot_response import response_proccessing
+from Request_Processing import *
 from datetime import datetime
 """This is Stitch Bots Main source code. Stitch Bot is an interactive discord bot that gives information about streamers 
 and games that you want to know about, it also stores users preferences and keeps you updated on the latest games and 
@@ -22,6 +22,7 @@ comment structure:
 {Exception Details}
 """
 
+# Used to get starttime. this is passed into the background tracker funtion, (Every Five hours it checks for live streamers)
 start_time = datetime.now()
 if int(start_time.strftime("%M")) >= 30:
     start_time = int(start_time.strftime("%H"))+1
@@ -55,11 +56,12 @@ class stitchBot(commands.Bot):
 
     # METHODS THAT ARE NOT COMMANDS OR EVENTS:
 
-    # - on_ready function - part of discord.py function starts when bot is ready
     async def on_ready(self):
+        # - on_ready function - part of discord.py function starts when bot is ready
+
         self.channels_to_list()
         for guild in self.guilds:
-            embed = discord.Embed(
+            embed = self.embed(
                 title=f'✅**Online!**',
                 description='Stitch Bot is online',
                 colour=self.colour)
@@ -69,79 +71,94 @@ class stitchBot(commands.Bot):
 
             await guild.text_channels[0].send(embed=embed)
 
-    # - adds servers and channels to the guild_dict and adds channels to the channel list
     def channels_to_list(self):
+        # - adds servers and channels to the guild_dict and adds channels to the channel list
         print('started')
         for guild in self.guilds:
             for channel in guild.text_channels:
                 if not isinstance(channel, discord.channel.DMChannel):
 
                     self.channel_list.append(channel)
-                    print(self.channel_list)
             self.guild_dict[guild] = self.channel_list
 
     async def background_tracker(self):
+        # background tracker that checks if tracked streamer has started streaming, if so the bot dms the user details and a clip from the stream
+
+        # waits until the vot has connected and the connection hasn't closed
         await self.wait_until_ready()
         while not self.is_closed():
-            print('running')
+
+            # itterates through all the ids and streamers in the csv file
             for user in storageHandler.trackedStreamList():
-                id = user[0]
-                print(id)
+                stored_discord_id = user[0]
                 streamer = user[1]
+                """ # could'nt get it working in time :(
+                # Updates checked dictionary
+                def update_streamer_dict():
+                    streamer_dict_list = []
 
-                def has_checked(id, name):
-                    if not self.checked_dict:
-                        return False
+                    # if dict is empty add all items to dictionary
+                    if stored_discord_id not in self.checked_dict.keys():
+                        for streamers in streamer:
+                            streamer_dict_list.append([streamers, False])
+                            self.checked_dict[stored_discord_id] = streamer_dict_list
 
-                    if int(datetime.now().strftime("%H"))-start_time>5:
-                        for item in self.checked_dict.values():
-                            item[1] = False
+                    elif stored_discord_id in self.checked_dict.keys():
+                        all_streamers = []
+                        for streamer_list in self.checked_dict[stored_discord_id]:
+                            all_streamers.append(streamer_list[0])
 
-                    for key in self.checked_dict.keys():
-                        if key == id:
-                            if self.checked_dict[id][0] == name:
-                                if self.checked_dict[1]:
-                                    return True
-                                else:
-                                    return False
+                        for streamers in streamer:
+                            if streamers not in all_streamers:
+                                streamer_dict_list.append([streamers, False])
+                                self.checked_dict[stored_discord_id] = streamer_dict_list
+j 8
+                # check function to check if the bot has already sent a dm
+                def has_checked(discord_id, tracked_streamer):
+                    all_streamers = []
+                    for streamer_list in self.checked_dict[stored_discord_id]:
+                        all_streamers.append(streamer_list[0])
+                        counter = -1
+                        if tracked_streamer in all_streamers:
+                            if streamer_list[1]:
+                                return True
+                            elif not streamer_list[1]:
+                                self.checked_dict[discord_id][counter][1] = True
+                                return False
                         else:
-                            self.checked_dict[id] = [streamer, True]
-                            return False
-
+                            return True
+                """
                 for name in streamer:
-                    if not has_checked(id, streamer):
-                        streamers_id = twitchHandler.getStreamerID(name)
-                        print(streamers_id)
-                        stream_checker = twitchHandler.checkIfStreaming(streamers_id)
-                        print(stream_checker)
-                        if not stream_checker:
-                            pass
-                        else:
-                            details = twitchHandler.streamDetails(streamers_id)
-                            print(details)
-                            vod = twitchHandler.latestStreamerClips(streamers_id)
+                    streamers_id = twitchHandler.getStreamerID(name)
+                    stream_checker = twitchHandler.checkIfStreaming(streamers_id)
+                    if not stream_checker:
+                        pass
+                    else:
+                        details = twitchHandler.streamDetails(streamers_id)
+                        vod = twitchHandler.latestStreamerClips(streamers_id)
+                        clip = '+ Popular clip from the stream:'
 
-                            if not vod:
-                                vod = ''
+                        if not vod:
+                            vod = ''
+                            clip = ''
 
-                            clip = '+ Popular clip from the stream:'
-                            title = f"**{details['user_name']}**"
-                            desc = f'''- {details['type']}
-                                            - Title: {details['title']}
-                                            - Viewers: {details['viewer_count']}
-                                            - Started at: {details['started_at']}
-                                            - Language: {details['language']}
-                                            {clip}'''
+                        title = f"**{details['user_name']}**"
+                        desc = f'''- {details['type']}
+                                        - Title: {details['title']}
+                                        - Viewers: {details['viewer_count']}
+                                        - Started at: {details['started_at']}
+                                        - Language: {details['language']}
+                                        {clip}'''
 
-                            embed = discord.Embed(
-                                title=f'{title}',
-                                description=f'{desc}',
-                                colour=self.colour, )
-                            user_dm = await self.fetch_user(int(id))
-                            print(user_dm)
-                            await user_dm.send(embed=embed)
-                            await user_dm.send(vod)
-            await asyncio.sleep(30)
+                        embed = discord.Embed(
+                            title=f'{title}',
+                            description=f'{desc}',
+                            colour=self.colour,)
+
+                        user_dm = await self.fetch_user(int(stored_discord_id))
+                        await user_dm.send(embed=embed)
+                        await user_dm.send(vod)
+            await asyncio.sleep(18000)
 
     @staticmethod
     def correct_channel(ctx):
@@ -169,16 +186,37 @@ class stitchBot(commands.Bot):
         # - Error handling:
             # - if a command is spelt wrong or does not exist it will send invalid command
 
-
+        @self.event
+        async def on_command_error(ctx, error):
+            if isinstance(error, commands.errors.CommandNotFound or Exception):
+                await ctx.send('**Invalid command used**')
+            else:
+                await ctx.send(f'**Error occured:**\n```{error}```')
 
         @self.event
         async def on_message(message):
-            print(message)
+            print(message.content)
             if isinstance(message.channel, discord.channel.TextChannel):
                 if message.channel.name == 'questions':
                     if not message.content == '':
                         if not message.author.id == bot.user.id:
-                            await message.channel.send(f'**{response_proccessing(message.content, message.author)}**')
+                            url_desc = tryRequestProcessing(message.content, message.author.id)
+                            try:
+                                desc = url_desc[0]
+                            except:
+                                desc = ''
+                            try:
+                                url = url_desc[1]
+                            except:
+                                url = ''
+                            embed = self.embed(
+                                title='Stitch-Bot',
+                                description= f'**{desc}**',
+                                colour=self.colour)
+                            if not desc == '':
+                                await message.channel.send(embed=embed)
+                            if not url == '':
+                                await message.channel.send(url)
 
             await bot.process_commands(message)
 
@@ -198,11 +236,11 @@ class stitchBot(commands.Bot):
         """
         # - COMMANDS (@self.command decorator)
 
+
         @self.command()
         @check(self.correct_channel)
         async def hello(ctx):
             await ctx.channel.send('**Hello** :yum:')
-
 
         @self.command()
         @check(self.correct_channel)
@@ -214,7 +252,6 @@ class stitchBot(commands.Bot):
                 amount - the amount of lines that you want to be cleared
             """
             await ctx.channel.purge(limit=amount)
-
 
         @self.command()
         @check(self.correct_channel)
@@ -230,7 +267,6 @@ class stitchBot(commands.Bot):
             """
             await member.kick(reason=reason)
             await ctx.send(f'**User {member} has been kicked**')
-
 
         @self.command()
         @check(self.correct_channel)
@@ -280,12 +316,14 @@ class stitchBot(commands.Bot):
                 await ctx.channel.send('**Incorrect Number**')
 
         @self.command()
-        async def test(ctx):
-            print(await ctx.guild.bans())
-
-        @self.command()
         @check(self.correct_channel)
         async def stream(ctx):
+            """
+            Output information on a streamer when command is invoked and streamer name is entered
+            parameters:
+                ctx - context object that discord.py passes in when command is invoked
+                streamers_name - name to pass and get streamer ID for details to output
+            """
             await ctx.send('**Enter Streamers name**')
 
             def check(msg):
@@ -299,7 +337,6 @@ class stitchBot(commands.Bot):
             if not streamers_id:
                 raise Exception('Streamer not Found')
 
-            print(streamers_id)
             stream_checker = twitchHandler.checkIfStreaming(streamers_id)
             if not stream_checker:
                 await ctx.channel.send(f'''
@@ -343,6 +380,12 @@ class stitchBot(commands.Bot):
         @self.command()
         @check(self.correct_channel)
         async def game(ctx):
+            """
+            Outputs information on a game that is requested
+            parameters:
+                ctx - context object that discord.py passes in when command is invoked
+                game_name - name to get game ID from steam API, then use that to gain details and trailer
+            """
             await ctx.send('**Enter game name**')
 
             def check(msg):
@@ -404,13 +447,19 @@ class stitchBot(commands.Bot):
 
         @self.command()
         @check(self.correct_channel)
+
+        """
+        outputs csgo stats when a user inputs there steam url ID 
+        parameters:
+            ctx - context object that discord.py passes in when command is invoked
+            steam_url, name on the end of a users unique steam url, used to get csgo info from API
+        """
         async def stats(ctx):
             await ctx.channel.send('**Enter Steam URL**')
 
             def check(msg):
                 return msg.author == ctx.author and msg.channel == ctx.channel
             steam_url = await bot.wait_for('message', check=check)
-            print(steam_url.content)
             steam_id = steamHandler.getUserSteamID(steam_url.content)
             csgo_stats = steamHandler.getCSGOStats(steam_id)
             if not csgo_stats:
@@ -439,6 +488,18 @@ class stitchBot(commands.Bot):
 
         @self.command()
         @check(self.correct_channel)
+        async def graph(ctx):
+            """
+            outputs graph stored in images folder
+            parameters:
+                ctx - context object that discord.py passes in when command is invoked
+            """
+            path = os.path.dirname(__file__)
+            graph = os.path.join(path, 'images/botGraph.png')
+            await ctx.send(file=File(graph))
+
+        @self.command()
+        @check(self.correct_channel)
         async def info(ctx):
             title = ':information_source:**Info**'
             desc = '''This is Stitch Bot ,It is an interactive Discord Bot that helps Gamers gain information about 
@@ -454,6 +515,8 @@ class stitchBot(commands.Bot):
 
             await ctx.send(embed=embed)
 
+
+        # Preference command and Subcommand: self explanitory names...
         @self.group()
         @check(self.correct_channel)
         async def pref(ctx):
@@ -617,16 +680,16 @@ class stitchBot(commands.Bot):
                 if not item == '':
                     if not iter == 0:
                         if item is not None:
-                            if type(item) == list:
-                                for stuff in item:
+                            for stuff in item:
+                                if type(item) == list:
                                     desc += f'\n**{count}** - {stuff}'
                                     count += 1
                                     stuffs.append(stuff)
-                            else:
-                                desc += f'\n**{count}** - {stuff}'
-                                count += 1
-                                stuffs.append(stuff)
-            embed = self.embed(
+                                else:
+                                    desc += f'\n**{count}** - {stuff}'
+                                    count += 1
+                                    stuffs.append(stuff)
+                embed = self.embed(
                 title=title,
                 description=desc,
                 colour=self.colour
@@ -666,6 +729,7 @@ class stitchBot(commands.Bot):
             - !game
             - !stats
             - !pref
+            - !graph
             - !info
             - !command
             """
@@ -677,23 +741,24 @@ class stitchBot(commands.Bot):
             await ctx.send(embed=embed)
 
 
-
-
-
 if __name__ == '__main__':
+    # path of this file:
     filePath = os.path.dirname(__file__)
 
+    # Gets Decrypt Key from txt File:
     # setting decrypt key
+    # sets path for txt file to be read from
     decrypt_key_path = os.path.join(filePath, "Discord_chatbot\Data_Control_Files\Encrypted_keys\Decrypt_key")
     with open(decrypt_key_path, 'r') as decrypt_key_file:
         decrypt_key = decrypt_key_file.read()
     encryption = encryptionAES128(decrypt_key)
 
-    # Acquiring encrypted discord token from text file
-
+    # Acquiring encrypted discord token from text file and using the Decrypt method to decrypt and return the key:
     discord_key_path = os.path.join(filePath, "Discord_chatbot\Data_Control_Files\Encrypted_keys\Discord_key.txt")
+    # Reads as 'rb' to get byte code from txt file
     with open(discord_key_path, 'rb') as key_file:
         encrypted_token = key_file.read()
+    # Decrypt function form imported Encryption.py
     token = encryption.decrypt(encrypted_token)
 
     bot = stitchBot(prefix='!')
