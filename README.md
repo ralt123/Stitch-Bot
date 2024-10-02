@@ -1,2 +1,2 @@
 # Stitch-Bot
-A gaming discord bot.
+Developed a discord bot tailored for a gamer for a group project.
